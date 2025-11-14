@@ -103,3 +103,4 @@ logs/
 # === KEEP FOLDER STRUCTURE ===
 # This ensures empty folders are tracked
 !.gitkeep
+/Depth-Anything-V2

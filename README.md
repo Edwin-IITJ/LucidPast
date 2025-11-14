@@ -1,8 +1,8 @@
 # LucidPast - Volumetric Memory Navigation System
 
-> **⚠️ Development Note**: This codebase was developed through AI-assisted prototyping using Claude (Anthropic) and Perplexity AI during a 2-week thesis project sprint. Code is functional but follows rapid prototyping practices rather than production-grade architecture.
+> ** Development Note**: This codebase was developed through AI-assisted prototyping using Claude (Anthropic) and Perplexity AI during a 2-week thesis project sprint. Code is functional but follows rapid prototyping practices rather than production-grade architecture.
 
-## 🎯 Project Overview
+## Project Overview
 
 **LucidPast** transforms 2D archival photographs into explorable 3D "memory fragment" environments for VR experiences. Inspired by the *Black Mirror: "Eulogy"* episode aesthetic, this system converts historical photos into volumetric spaces that evoke the dreamlike quality of faded memories.
 
@@ -14,7 +14,7 @@
 
 ---
 
-## 🛠️ Technical Pipeline
+## Technical Pipeline
 
 ```
 Archival Photo (TIFF/PNG)
@@ -32,7 +32,7 @@ Blender/Unity Integration
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 LucidPast/
@@ -57,7 +57,7 @@ LucidPast/
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Python**: 3.8 - 3.10 (tested on 3.10)
@@ -103,7 +103,7 @@ python -c "import open3d; print(open3d.__version__)"        # Should print: 0.18
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### Step 1: Prepare Source Photos
 ```bash
@@ -147,7 +147,7 @@ python generate_3d_mesh_textured_gltf.py
 
 ---
 
-## 📦 Dependencies
+## Dependencies
 
 ### Core Requirements
 ```
@@ -165,7 +165,7 @@ open3d>=0.18.0            # 3D mesh processing
 
 ---
 
-## 🎨 Design Philosophy
+## Design Philosophy
 
 ### Aesthetic Principles
 1. **Imperfection as Feature**: Mesh artifacts represent memory decay
@@ -279,25 +279,9 @@ POISSON_DEPTH = 9  # Lower depth = smoother (test vs. 10)
 
 ---
 
-## 🎓 Thesis Context
+## Contributing
 
-**Project**: LucidPast - Volumetric Memory Navigation System  
-**Type**: MFA Interaction Design Thesis  
-**Timeline**: Nov 6-20, 2025 (2 weeks)  
-**Institution**: School Of Design, IIT Jodhpur
-**Advisor**: Dr. Sajan Pillai
-
-### Research Questions
-1. Can depth-estimated 3D photos evoke stronger emotional recall than 2D viewing?
-2. Do gaze-based transitions feel more "natural" than menu selection?
-3. At what artifact threshold does "dreamlike" become "broken"?
-4. Does VR presence in archival photos create empathy vs. detachment?
-
----
-
-## 🤝 Contributing
-
-This is a thesis project with a fixed 2-week deadline (Nov 20, 2025). Contributions are **not actively sought** during development, but post-thesis improvements are welcome:
+This is a project with a fixed 2-week deadline. Contributions are **not actively sought** during development, but post-thesis improvements are welcome:
 
 - **Code optimization**: Performance improvements, GPU memory efficiency
 - **Model upgrades**: Integration of newer depth models (Depth Pro, Marigold)
@@ -312,7 +296,7 @@ This is a thesis project with a fixed 2-week deadline (Nov 20, 2025). Contributi
 
 ---
 
-## 📄 License
+## License
 
 **Code**: MIT License (see LICENSE file)  
 **Archival Photos**: Not included in repository. Original photos sourced from:
@@ -334,19 +318,13 @@ This is a thesis project with a fixed 2-week deadline (Nov 20, 2025). Contributi
 
 ---
 
-## 📧 Contact
+## Contact
 
 **Developer**: Edwin Meleth  
 **Email**: m24ldx008@iitj.ac.in
 **Thesis Website**: https://edwinm.vercel.app/  
-**Demo Video**: [YouTube/Vimeo link - after Nov 20]  
-
-**Status**: Active development (Nov 6-20, 2025) → Archived post-thesis
+**Demo Video**: [YouTube/Vimeo link]  
 
 ---
 
-**Last Updated**: November 14, 2025, 6:59 PM IST
-
----
-
-*"Memories are not photographs—they are 3D spaces with missing walls, blurred faces, and darkness at the edges. LucidPast embraces this imperfection."*
+*"Memories are not photographs, they are 3D spaces with missing walls, blurred faces, and darkness at the edges. LucidPast embraces this imperfection."*
