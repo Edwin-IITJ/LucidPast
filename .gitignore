@@ -5,24 +5,43 @@
 SourcePhotos/
 !SourcePhotos/.gitkeep
 
-# Generated depth maps (PNG files: 10-50 MB each)
+# Generated depth maps - Depth Anything V2 (PNG files: 10-50 MB each)
 Depth-Maps/
 !Depth-Maps/.gitkeep
+
+# Generated depth maps - Depth Pro (PNG files: 10-50 MB each)
+Depth-Maps-Pro/
+!Depth-Maps-Pro/.gitkeep
 
 # Texture files (PNG/JPG: 5-20 MB each)
 Textures/
 !Textures/.gitkeep
 
-# Output meshes (OBJ/PLY files: 100-500 MB each)
+# Output meshes - Depth Anything V2 (OBJ/PLY files: 100-500 MB each)
 Meshes/
 !Meshes/.gitkeep
 
-# === PYTHON ===
-# Virtual environment
+# Output meshes - Depth Pro Test (OBJ/PLY files: 100-500 MB each)
+Meshes-DepthPro-Test/
+!Meshes-DepthPro-Test/.gitkeep
+
+# Output meshes - Depth Pro Production (OBJ/PLY files: 100-500 MB each)
+Meshes-DepthPro/
+!Meshes-DepthPro/.gitkeep
+
+# Video renders (MP4 files can be 1-5 GB)
+Renders/
+!Renders/.gitkeep
+
+# === PYTHON ENVIRONMENTS ===
+# Virtual environment (main project)
 env/
 venv/
 ENV/
 .venv/
+
+# Virtual environment (Depth Pro - separate)
+env_depthpro/
 
 # Python cache
 __pycache__/
@@ -91,6 +110,14 @@ $RECYCLE.BIN/
 Depth-Anything-V2/checkpoints/*.pth
 !Depth-Anything-V2/checkpoints/.gitkeep
 
+# Depth Pro model weights (1.77 GB - download separately)
+ml-depth-pro/checkpoints/*.pt
+!ml-depth-pro/checkpoints/.gitkeep
+
+# === ML-DEPTH-PRO ===
+# Exclude entire ml-depth-pro repo (it's a separate GitHub repo)
+ml-depth-pro/
+
 # === LOGS ===
 *.log
 logs/
@@ -103,4 +130,3 @@ logs/
 # === KEEP FOLDER STRUCTURE ===
 # This ensures empty folders are tracked
 !.gitkeep
-/Depth-Anything-V2
