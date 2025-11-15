@@ -189,7 +189,7 @@ open3d>=0.18.0            # 3D mesh processing
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Key Parameters (in `generate_3d_mesh_textured_gltf.py`)
 
@@ -221,7 +221,7 @@ NEIGHBOR_MAX = 30         # Max neighbors for normal averaging
 
 ---
 
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 **Test System**: RTX 3060 6GB, Intel i7-11700K, 32GB RAM
 
@@ -270,7 +270,7 @@ POISSON_DEPTH = 9  # Lower depth = smoother (test vs. 10)
 
 ---
 
-## 📚 References
+## References
 
 ### Research & Inspiration
 - **Depth Anything V2**: [Paper](https://arxiv.org/abs/2406.09414) | [GitHub](https://github.com/DepthAnything/Depth-Anything-V2)
@@ -312,7 +312,7 @@ This is a project with a fixed 2-week deadline. Contributions are **not actively
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **AI Development**: Claude (Anthropic), Perplexity AI - code generation & debugging
 - **Models**: Depth Anything V2 team (TikTok/ByteDance)
