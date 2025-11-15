@@ -275,7 +275,11 @@ POISSON_DEPTH = 9  # Lower depth = smoother (test vs. 10)
 ### Research & Inspiration
 - **Depth Anything V2**: [Paper](https://arxiv.org/abs/2406.09414) | [GitHub](https://github.com/DepthAnything/Depth-Anything-V2)
 - **Black Mirror "Eulogy"**: Volumetric memory playback aesthetic
-- **Dorothea Lange**: Great Depression photography (Migrant Mother, 1936)
+
+---
+
+https://www.loc.gov/pictures/item/2017762905/
+https://www.loc.gov/pictures/item/2017837877/
 
 ---
 
