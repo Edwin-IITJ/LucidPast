@@ -1,334 +1,285 @@
-# LucidPast - Volumetric Memory Navigation System
+> ** Development Note**: This codebase was developed through AI-assisted prototyping using Claude (Anthropic) and Perplexity AI during a 2-week project sprint. Code is functional but follows rapid prototyping practices rather than production-grade architecture.
 
-> ** Development Note**: This codebase was developed through AI-assisted prototyping using Claude (Anthropic) and Perplexity AI during a 2-week thesis project sprint. Code is functional but follows rapid prototyping practices rather than production-grade architecture.
+# LucidPast
+
+Gaze-driven volumetric navigation system for spatial exploration of archival photographs in extended reality.
 
 ## Project Overview
 
-**LucidPast** transforms 2D archival photographs into explorable 3D "memory fragment" environments for VR experiences. Inspired by the *Black Mirror: "Eulogy"* episode aesthetic, this system converts historical photos into volumetric spaces that evoke the dreamlike quality of faded memories.
+LucidPast transforms 2D archival photographs into explorable 3D volumetric environments for VR experiences. Inspired by *Black Mirror: "Eulogy"* episode, this system enables users to navigate historical photographs through natural gaze, creating dream-like exploration of collective visual memory.
 
 ### Core Concept
-- **Input**: Single 2D archival photograph (TIFF/PNG)
-- **Output**: 3D textured mesh with depth-based geometry
-- **Goal**: Immersive historical exploration, not photorealistic reconstruction
-- **Aesthetic**: "Imperfection as authenticity" - mesh artifacts enhance memory fragmentation feel
+
+**Input**: Single 2D archival photograph  
+**Output**: 3D textured mesh with authentic depth preservation  
+**Goal**: Natural attention-driven archival discovery  
+**Principle**: Limited parallax maintains historical authenticity without fabricating invisible content
 
 ---
 
 ## Technical Pipeline
 
-```
-Archival Photo (TIFF/PNG)
-    ↓
-Depth Estimation (Depth Anything V2 - Large Model)
-    ↓
+Archival Photograph (TIFF/PNG/JPG)
+↓
+Depth Estimation (Apple Depth Pro)
+↓
 3D Point Cloud Generation
-    ↓
+↓
 Poisson Surface Reconstruction (Open3D)
-    ↓
+↓
 Textured Mesh Export (OBJ/PLY)
-    ↓
-Blender/Unity Integration
-```
+↓
+Unity XR Integration (Phase 2)
 
 ---
 
 ## Repository Structure
 
-```
 LucidPast/
 │
 ├── Scripts/
-│   ├── batch_depth_estimation.py        # Batch depth map generation
-│   ├── generate_3d_mesh_textured_gltf.py # Mesh creation with textures (v6.0)
-│   └── README.md                         # This file
+│ ├── batch_depth_estimation_pro.py # Depth Pro batch processing
+│ ├── generate_3d_mesh_depthpro.py # Mesh generation pipeline
+│ ├── batch_depth_estimation.py        # DepthAnything V2 depth map generation
+│ ├── generate_3d_mesh_textured_gltf.py # DepthAnything V2 Mesh creation
+│ └── README.md
 │
-├── SourcePhotos/                         # Original archival images (not in repo)
-├── Depth-Maps/                           # Generated depth maps (not in repo)
-├── Textures/                             # PNG texture files (not in repo)
-├── Meshes/                               # Output 3D meshes (not in repo)
+├── SourcePhotos/                         # Original archival images
+├── Meshes/                               # Output 3D meshes
+├── Meshes-DepthPro/                      # Output 3D meshes
+├── Depth-Maps/                           # Generated depth maps
+├── Depth-Maps-Pro/                       # Generated depth maps
+├── Textures/                             # PNG texture files
 ├── Depth-Anything-V2/                    # External model repo (submodule)
+├── ml-depth-pro/                         # External model repo (submodule)
 │
 ├── .gitignore
 ├── requirements.txt
 └── README.md
-```
 
-**Note**: Large binary files (photos, meshes, depth maps) are excluded via `.gitignore`. Only processing scripts are versioned.
+Large binary files (source photos, depth maps, meshes) are excluded via .gitignore.
 
 ---
 
-## Quick Start
+## Prerequisites
 
-### Prerequisites
-- **Python**: 3.8 - 3.10 (tested on 3.10)
-- **GPU**: CUDA-compatible (tested on RTX 3060 6GB)
-- **OS**: Windows 10/11 (paths use Windows format)
-- **Software**: Blender 3.6+ (for manual texture fixes), Unity 6 (optional)
+**Python**: 3.8 to 3.10  
+**GPU**: CUDA compatible (tested on RTX 3060 6GB)  
+**RAM**: 16GB minimum  
+**OS**: Windows 10/11, macOS, Linux
 
-### Installation
+---
 
-**1. Clone Repository**
-```bash
+## Installation
+
+### 1. Clone Repository
+
 git clone https://github.com/Edwin-IITJ/LucidPast.git
 cd LucidPast
-```
 
-**2. Set Up Python Environment**
-```bash
+### 2. Set Up Python Environment
+
 python -m venv env
-env\Scripts\activate  # Windows
-# source env/bin/activate  # macOS/Linux
-
+source env/bin/activate # On Windows: env\Scripts\activate
 pip install -r requirements.txt
-```
 
-**3. Install Depth Anything V2**
-```bash
-cd ..
-git clone https://github.com/DepthAnything/Depth-Anything-V2.git
-cd Depth-Anything-V2
+### 3. Install Apple Depth Pro
 
-# Download Large model checkpoint
-# Visit: https://huggingface.co/depth-anything/Depth-Anything-V2-Large
-# Download: depth_anything_v2_vitl.pth
-# Place in: Depth-Anything-V2/checkpoints/
-```
+pip install git+https://github.com/apple/ml-depth-pro.git
 
-**4. Verify Installation**
-```bash
-cd ../LucidPast/Scripts
-python -c "import torch; print(torch.cuda.is_available())"  # Should print: True
-python -c "import open3d; print(open3d.__version__)"        # Should print: 0.18.0+
-```
+### 4. Verify Installation
+
+python -c "import torch; print(torch.cuda.is_available())"
+python -c "import open3d; print(open3d.version)"
 
 ---
 
 ## Usage
 
-### Step 1: Prepare Source Photos
-```bash
-# Place archival photos in SourcePhotos/
-# Supported formats: TIFF (8/16-bit), PNG, JPG
-# Example: SourcePhotos/01_diner_1940.tif
-```
+### Step 1: Prepare Source Photographs
+
+Place archival photographs in `SourcePhotos/` directory.  
+Supported formats: TIFF, PNG, JPG
 
 ### Step 2: Generate Depth Maps
-```bash
+
 cd Scripts
-python batch_depth_estimation.py
-```
-**Output**: `Depth-Maps/[filename]_depth_highres.png`
+python batch_depth_estimation_pro.py
 
-### Step 3: Convert Textures (Manual)
-```bash
-# Open TIFF files in Photoshop/GIMP
-# Export as: Textures/[filename]_texture.png
-# Settings: 8-bit PNG, sRGB color space
-```
+Output: `DepthMaps-DepthPro/[filename]_depth.png`
 
-### Step 4: Create 3D Meshes
-```bash
-python generate_3d_mesh_textured_gltf.py
-```
-**Output**: 
-- `Meshes/[filename].obj` (OBJ mesh with UVs)
-- `Meshes/[filename].ply` (PLY with vertex colors)
+### Step 3: Create 3D Meshes
 
-### Step 5: Import to Blender
-```
-1. Open Blender
-2. File → Import → Wavefront (.obj)
-3. Select mesh from Meshes/ folder
-4. Edit Mode → Select All → Mesh → Normals → Recalculate Outside
-5. Material Properties → Add Material → Image Texture
-6. Link texture from Textures/ folder
-7. Viewport Shading → Material Preview
-```
+python generate_3d_mesh_depthpro.py
+
+Output:  
+`Meshes-DepthPro/[filename].obj` (mesh with UV coordinates)  
+`Meshes-DepthPro/[filename].ply` (mesh with vertex colors)
+
+### Step 4: Import to Blender
+
+1. File > Import > Wavefront (.obj)
+2. Select mesh from Meshes-DepthPro/ folder
+3. Edit Mode > Select All > Mesh > Normals > Recalculate Outside
+4. Material Properties > Add Material > Image Texture
+5. Link texture from SourcePhotos/ folder
 
 ---
 
 ## Dependencies
 
-### Core Requirements
-```
-torch>=2.0.0              # PyTorch (CUDA 11.8+)
-torchvision>=0.15.0       # Vision utilities
-opencv-python>=4.8.0      # Image processing
-numpy>=1.24.0             # Array operations
-Pillow>=10.0.0            # Image loading
-open3d>=0.18.0            # 3D mesh processing
-```
-
-### External Models
-- **Depth Anything V2** (Large): [GitHub](https://github.com/DepthAnything/Depth-Anything-V2)
-- Model checkpoint: `depth_anything_v2_vitl.pth` (1.3GB)
+torch>=2.0.0 # PyTorch with CUDA support
+torchvision>=0.15.0 # Vision utilities
+opencv-python>=4.8.0 # Image processing
+numpy>=1.24.0 # Array operations
+Pillow>=10.0.0 # Image loading
+open3d>=0.18.0 # 3D mesh processing
+ml-depth-pro # Apple Depth Pro model
 
 ---
 
-## Design Philosophy
+## Design Rationale
 
-### Aesthetic Principles
-1. **Imperfection as Feature**: Mesh artifacts represent memory decay
-2. **Dark Void Aesthetic**: Black backgrounds create liminal spaces
-3. **Soft Focus Acceptable**: Dreamlike blur over clinical precision
-4. **Depth Ambiguity**: Background fade enhances mystery
+### Depth Model Selection
 
-### Technical Trade-offs
-| Issue | Design Reframe |
-|-------|----------------|
-| Mesh artifacts | "Memory fragmentation" authenticity |
-| Inverted normals | Hidden by darkness, eerie atmosphere |
-| Vertex color blur | Soft focus memory effect |
-| Depth wall ambiguity | Intentional liminal space |
+**Depth Pro** was selected over Depth Anything V2 after comparison testing.
 
-### Interaction Model (Target VR Experience)
-- **50cm head lean range**: Reveals parallax depth
-- **Gaze-based navigation**: 4-second dwell time transitions
-- **Corner studio paradigm**: Small enclosed environments
-- **No photorealism**: Emotional resonance over accuracy
+| Aspect | Depth Anything V2 | Depth Pro |
+|--------|-------------------|-----------|
+| Facial detail | Soft edges | Sharp boundaries |
+| Portrait quality | Adequate | Superior |
+| Design priority | Speed | Quality |
+
+**Decision**: Portrait fidelity prioritized over processing speed for human-centered archival documentation.
+
+### Test Dataset Diversity
+
+10 environments from 9 photographs tested across:
+
+**Close-up portraits**: Migrant Mother (two crops), Helen Keller  
+**Crowd scenes**: Martin Luther King Jr. gathering  
+**Unusual lighting**: Nikola Tesla double exposure  
+**Extreme conditions**: Buzz Aldrin lunar surface  
+**Interior spaces**: 1940s diner, 1942 radio studio
+
+All conditions generated convincing volumetric reconstructions with proper depth layering.
+
+### Processing Performance
+
+**Hardware**: RTX 3060 6GB, 16GB RAM
+
+**Timing breakdown**:
+- Total processing**: 8-9 hours
+
+### Memory Optimization
+
+Images exceeding 35 megapixels automatically downsample while preserving aspect ratio.  
+Reduces memory requirements by 40 to 60 percent while maintaining perceptual quality for VR viewing.
 
 ---
 
 ## Configuration
 
-### Key Parameters (in `generate_3d_mesh_textured_gltf.py`)
+### Key Parameters (in generate_3d_mesh_depthpro.py)
 
-```python
-# Poisson Surface Reconstruction
-POISSON_DEPTH = 10        # Octree depth (8-10 recommended)
-                          # Higher = more detail, but amplifies noise
+POISSON_DEPTH = 10 # Surface reconstruction detail level
+MAX_MEGAPIXELS = 35 # Automatic downsampling threshold
+DEPTH_INVERSION = True # Depth Pro requires inversion
 
-# Camera Projection
-FOCAL_LENGTH_MULTIPLIER = 1.2  # 1940s standard lens assumption
-                               # Adjust if perspective feels wrong
+### Ethical Constraints
 
-# Normal Correction
-NEIGHBOR_RADIUS = 0.05    # Centroid-based normal fix radius
-NEIGHBOR_MAX = 30         # Max neighbors for normal averaging
-```
-
-### Hardware Optimization
-```python
-# For GPUs with <8GB VRAM (like RTX 3060 6GB):
-# - Use depth_highres.png (not ultra_highres)
-# - Poisson depth ≤ 10
-# - Process 1 image at a time
-
-# For GPUs with ≥8GB VRAM:
-# - Can batch multiple images
-# - Poisson depth up to 12
-```
+Users can move head position to perceive depth through parallax, but movement is constrained.  
+System prevents viewing angles the original camera never captured.  
+No AI fabrication beyond depth inference from visible photograph content.
 
 ---
 
-## Performance Benchmarks
+## Interaction Design (Phase 2 Implementation)
 
-**Test System**: RTX 3060 6GB, Intel i7-11700K, 32GB RAM
+### Gaze Navigation
 
-| Task | Time | Output Size |
-|------|------|-------------|
-| Depth estimation (4000×3000px) | 1-2 sec | 10-15 MB PNG |
-| Mesh generation (Poisson depth=10) | 2-5 min | 800K-2M vertices |
-| Blender import + texture | 10-30 sec | ~100-300 MB .blend |
+**Dwell time**: 1 second (research-based optimal duration)  
+**Visual feedback**: Radial progress indicator  
+**Transition**: 3 second dream-like sequence with Gaussian blur and vignette
 
-**Known Limitations**:
-- **High-res photos (>8000px)**: May cause CUDA OOM errors
-- **Very dark/bright photos**: Depth estimation less accurate
-- **Transparent objects**: Depth maps struggle with glass/reflections
+### Progressive Thematic Narrowing
+
+**Minutes 0 to 7**: Open exploration (algorithm observes patterns)  
+**Minutes 7 to 13**: Emerging theme (subtle guidance begins)  
+**Minutes 13 to 20**: Narrative clarity (focused sequence)
+
+Algorithm operates invisibly. Users perceive continued free exploration while backend shapes thematic coherence.
+
+### Spatial Voice Annotations
+
+**Gesture**: Pinch near mouth activates recording  
+**Duration**: Up to 60 seconds  
+**Interface**: YouTube-style comment organization  
+**Purpose**: Community interpretation layer without institutional hierarchy
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Issue: Purple textures in Blender
-**Solution**: Texture file path broken. 
-```
-1. Switch to Shading workspace
-2. Image Texture node → Open image
-3. Browse to Textures/[filename]_texture.png
-```
+### CUDA out of memory
 
-### Issue: CUDA out of memory
-**Solution**: 
-```python
-# In batch_depth_estimation.py, reduce batch size:
-torch.cuda.empty_cache()  # Add after each image
-```
+Add `torch.cuda.empty_cache()` after each image in batch processing script.
 
-### Issue: Inverted normals (red faces)
-**Solution**: 
-```
-Blender Edit Mode → Select All → Mesh → Normals → Recalculate Outside
-```
+### Inverted normals in Blender
 
-### Issue: Mesh too "blobby"
-**Solution**:
-```python
-# In generate_3d_mesh_textured_gltf.py, try:
-POISSON_DEPTH = 9  # Lower depth = smoother (test vs. 10)
-```
+Edit Mode > Select All > Mesh > Normals > Recalculate Outside
+
+### Depth Pro depth inversion
+
+Ensure `DEPTH_INVERSION = True` in mesh generation script.  
+Depth Pro uses inverted depth convention (black = near, white = far).
 
 ---
 
 ## References
 
-### Research & Inspiration
-- **Depth Anything V2**: [Paper](https://arxiv.org/abs/2406.09414) | [GitHub](https://github.com/DepthAnything/Depth-Anything-V2)
-- **Black Mirror "Eulogy"**: Volumetric memory playback aesthetic
+**Depth Pro**: Bochkovskii, A., et al. "Depth Pro: Sharp Monocular Metric Depth in Less Than a Second." Apple Machine Learning Research, 2024.
+
+**Depth Anything V2**: Yang, L., et al. "Depth Anything V2." arXiv:2406.09414, 2024.
+
+**Open3D**: Zhou, Q., et al. "Open3D: A Modern Library for 3D Data Processing." arXiv:1801.09847, 2018.
 
 ---
 
-https://www.loc.gov/pictures/item/2017762905/
-https://www.loc.gov/pictures/item/2017837877/
+## Phase 1 Achievements
 
----
+**Complete interaction design**: User journey, gaze navigation patterns, voice annotation system, multi-user reflection spaces
 
-## Contributing
+**Research-based parameters**: 1 second gaze dwell time, 25 second environment familiarization, 3 second dream transitions
 
-This is a project with a fixed 2-week deadline. Contributions are **not actively sought** during development, but post-thesis improvements are welcome:
+**Technical validation**: 10 diverse archival photographs successfully converted to explorable volumetric environments
 
-- **Code optimization**: Performance improvements, GPU memory efficiency
-- **Model upgrades**: Integration of newer depth models (Depth Pro, Marigold)
-- **Blender automation**: Scripted texture relinking, batch processing
-- **Unity XR integration**: Meta Quest 3, Apple Vision Pro support
-
-**Pull Request Guidelines**:
-1. Test on Windows + CUDA GPU
-2. Maintain existing file structure
-3. Document performance impact
-4. Follow "imperfection as feature" aesthetic philosophy
+**Design framework**: Pathway-dependent interpretation through contextual priming and Kuleshov Effect application
 
 ---
 
 ## License
 
-**Code**: MIT License (see LICENSE file)  
-**Archival Photos**: Not included in repository. Original photos sourced from:
-- Library of Congress (public domain)
+**Project License**: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
-**Attribution**: 
-- Depth Anything V2 model © 2024 TikTok Ltd. (Apache 2.0)
-- Open3D © Intel Corporation (MIT License)
+You are free to:
+- Use this project for any purpose (commercial or non-commercial)
+- Modify and build upon this work
+- Share and redistribute
 
----
+**Under the following terms**:
+- **Attribution required**: Credit Edwin Meleth and link to this repository
 
-## Acknowledgments
+**Recommended Citation**:
+LucidPast: Gaze-Driven Volumetric Navigation Through Archival Memory
+Edwin Meleth, IIT Jodhpur (2025)
+https://github.com/Edwin-IITJ/LucidPast
 
-- **AI Development**: Claude (Anthropic), Perplexity AI - code generation & debugging
-- **Models**: Depth Anything V2 team (TikTok/ByteDance)
-- **Libraries**: Open3D, PyTorch, OpenCV communities
-- **Inspiration**: Charlie Brooker (*Black Mirror*), Dorothea Lange (photography)
-- **Thesis Support**: Dr. Sajan Pillai, Assistant Professor, IIT Jodhpur
+**Code Components**: MIT License (includes attribution clause)
 
----
+**Archival Photographs**: Public domain sources (Library of Congress, Wikimedia Commons)  
+Original photos not subject to copyright. Attribution to original photographers encouraged.
 
-## Contact
-
-**Developer**: Edwin Meleth  
-**Email**: m24ldx008@iitj.ac.in
-**Thesis Website**: https://edwinm.vercel.app/  
-**Demo Video**: [YouTube/Vimeo link]  
-
----
-
-*"Memories are not photographs, they are 3D spaces with missing walls, blurred faces, and darkness at the edges. LucidPast embraces this imperfection."*
+**Third-Party Dependencies**:
+- Apple Depth Pro: Apache 2.0 License
+- Open3D: MIT License
