@@ -169,7 +169,7 @@ All conditions generated convincing volumetric reconstructions with proper depth
 **Hardware**: RTX 3060 6GB, 16GB RAM
 
 **Timing breakdown**:
-- Total processing**: 8-9 hours
+- Total processing: 8-9 hours
 
 ### Memory Optimization
 
