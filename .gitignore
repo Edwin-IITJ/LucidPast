@@ -33,6 +33,10 @@ Meshes-DepthPro/
 Renders/
 !Renders/.gitkeep
 
+# Generated splat/point clouds (PLY files: 50-150 MB each)
+Gaussians-SHARP/
+!Gaussians-SHARP/.gitkeep
+
 # === PYTHON ENVIRONMENTS ===
 # Virtual environment (main project)
 env/
@@ -114,9 +118,11 @@ Depth-Anything-V2/checkpoints/*.pth
 ml-depth-pro/checkpoints/*.pt
 !ml-depth-pro/checkpoints/.gitkeep
 
-# === ML-DEPTH-PRO ===
-# Exclude entire ml-depth-pro repo (it's a separate GitHub repo)
+# === EXTERNAL REPOSITORIES ===
+# Exclude entire external repositories
 ml-depth-pro/
+ml-sharp/
+Depth-Anything-V2/
 
 # === LOGS ===
 *.log
