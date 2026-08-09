@@ -71,6 +71,22 @@ class SplatViewer {
             this.isDragging = false;
         });
 
+        // --- Scroll Wheel for Speed Adjustment (Unreal Engine style) ---
+        this.container.addEventListener('wheel', (e) => {
+            // Only adjust speed if we are holding a mouse button (like right-click dragging)
+            // or we can allow it anytime. Let's allow it anytime the mouse is over the viewer.
+            e.preventDefault();
+            const speedMultiplier = 1.2;
+            if (e.deltaY < 0) {
+                // Scroll up -> Increase speed
+                this.moveSpeed = Math.min(this.moveSpeed * speedMultiplier, 5.0);
+            } else if (e.deltaY > 0) {
+                // Scroll down -> Decrease speed
+                this.moveSpeed = Math.max(this.moveSpeed / speedMultiplier, 0.001);
+            }
+            console.log(`Camera Speed: ${this.moveSpeed.toFixed(4)}`);
+        }, { passive: false });
+
         // --- Keyboard Events ---
         document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() in this.keys) this.keys[e.key.toLowerCase()] = true;
