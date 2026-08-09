@@ -21,7 +21,7 @@ class SplatViewer {
             initialCameraLookAt: [0, 0, 0],
             backgroundColor: '#000000',
             webXRMode: GaussianSplats3D.WebXRMode.VR, // enable VR capabilities
-            sharedMemoryForWorkers: false // Fix SharedArrayBuffer cross-origin issue
+            sharedMemoryForWorkers: true // Re-enable for full fidelity now that headers are fixed
         });
 
         await this.viewer.init();

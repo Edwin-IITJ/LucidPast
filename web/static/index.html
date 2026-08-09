@@ -31,7 +31,7 @@
         for (const src of scripts) {
             const script = document.createElement('script');
             script.src = src;
-            script.defer = true;
+            script.async = false; // Guarantees execution order for dynamically added scripts
             document.body.appendChild(script);
         }
     </script>

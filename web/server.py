@@ -110,6 +110,12 @@ def process_image_job(job_id, file_path):
 # API Endpoints
 # ---------------------------------------------------------------------------
 
+@app.after_request
+def add_security_headers(response):
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+    response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+    return response
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
