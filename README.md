@@ -10,6 +10,12 @@ LucidPast transforms 2D archival photographs into explorable 3D Gaussian Splat e
 
 ## Quick Start
 
+### Web Interface & WebXR (New!)
+
+LucidPast now includes a cinematic web interface with a built-in Gaussian Splat viewer and WebXR support for immersive VR exploration (optimized for Meta Quest 3).
+
+> **Note:** The SHARP pipeline is run locally on your machine via a Flask backend. This is a local setup, not a cloud deployment.
+
 ```bash
 # 1. Clone
 git clone https://github.com/Edwin-IITJ/LucidPast.git
@@ -18,14 +24,19 @@ cd LucidPast
 # 2. Set up the SHARP environment (requires env_sharp with sharp CLI)
 #    See "Environment Setup" below
 
-# 3. Place source photographs in input/
-#    Supported formats: TIFF, PNG, JPG, BMP
+# 3. Install web dependencies
+pip install -r requirements.txt
 
-# 4. Run the pipeline
-python scripts/batch_sharp_gaussian.py
+# 4. Start the local server
+python web/server.py
 
-# 5. Find your Gaussian Splats in output/gaussians/<image_name>/
+# 5. Open your browser
+#    Desktop: Go to http://127.0.0.1:5000 to upload photos
+#    Quest 3: Open the Quest Browser and navigate to http://<your-local-ip>:5000 to enter VR
 ```
+
+You can still run the headless batch pipeline using:
+`python scripts/batch_sharp_gaussian.py`
 
 ---
 
@@ -34,14 +45,19 @@ python scripts/batch_sharp_gaussian.py
 ```
 Archival Photograph (TIFF/PNG/JPG)
         ↓
-Apple SHARP Model (Gaussian Splatting)
+Flask Web Backend (Upload)
+        ↓
+Apple SHARP Model (Gaussian Splatting CLI)
         ↓
 3D Gaussian Splat (.ply)
         ↓
-XR Viewer / Unity Integration
+Web Browser Viewer (Three.js) → WebXR VR Session (Black Void)
 ```
 
 The pipeline uses **Apple SHARP** to generate photorealistic Gaussian Splats from single photographs in under 1 second per image. SHARP preserves fine photographic texture — film grain, tonal gradation, edge softness — that traditional polygon mesh pipelines lose during reconstruction.
+
+### Future Improvements
+- **Audio Soundscape:** A subtle ambient soundscape for the VR environment to further enhance the "Eulogy" aesthetic (currently pure silence).
 
 ### Why SHARP?
 

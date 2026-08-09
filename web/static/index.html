@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LucidPast — Archival Memory Explorer</title>
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- WebXR Polyfill (optional, for broader compatibility) -->
+    <script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js"></script>
+    
+    <!-- ES Module Import Map for Three.js and GaussianSplats3D -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+            "@mkkellogg/gaussian-splats-3d": "https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.3/build/gaussian-splats-3d.module.js"
+        }
+    }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+        
+        // Expose to window so our existing scripts can use them without being modules
+        window.THREE = THREE;
+        window.GaussianSplats3D = GaussianSplats3D;
+        
+        // Manually dispatch an event when the library is ready, or load our scripts dynamically
+        const scripts = ['/js/viewer.js', '/js/xr.js', '/js/app.js'];
+        for (const src of scripts) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Panel 1: Upload -->
+    <div id="panel-upload" class="panel active">
+        <h1>LucidPast</h1>
+        <p class="tagline">Step into the moment.</p>
+        
+        <div class="dropzone" id="dropzone">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <p>Drag & Drop Photograph</p>
+            <p style="font-size: 0.7rem; margin-top: 0.5rem; opacity: 0.5;">TIFF, PNG, JPG</p>
+            <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.tiff,.tif,.bmp">
+        </div>
+        
+        <button id="btn-skip-to-gallery" class="btn" style="margin-top: 3rem; font-size: 0.7rem; border: none; opacity: 0.6;">View Existing Memories</button>
+    </div>
+
+    <!-- Panel 2: Processing -->
+    <div id="panel-processing" class="panel">
+        <div class="pulse"></div>
+        <h2 style="font-weight: 300; letter-spacing: 0.1em; margin-bottom: 2rem;">Reconstructing Volume...</h2>
+        <div class="terminal" id="terminal-output">
+            <!-- Logs will appear here -->
+        </div>
+    </div>
+
+    <!-- Panel 3: Viewer -->
+    <div id="panel-viewer" class="panel">
+        <!-- Canvas Container -->
+        <div id="viewer-container"></div>
+        
+        <!-- UI Overlay -->
+        <div class="viewer-ui">
+            <div class="header">
+                <div>
+                    <h1 class="title-small">LucidPast</h1>
+                    <p id="current-scene-name" style="color: var(--accent-color); font-size: 0.9rem; letter-spacing: 0.1em;">Loading...</p>
+                </div>
+                
+                <!-- WebXR Button Container (Three.js will inject button here) -->
+                <div class="controls" id="xr-controls">
+                    <!-- The Enter VR button will be created dynamically via xr.js -->
+                    <button id="btn-back" class="btn">Back</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end;">
+                <!-- Gallery Sidebar -->
+                <div class="gallery" id="gallery-container">
+                    <h3>Archived Memories</h3>
+                    <div id="gallery-list">
+                        <!-- Items populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

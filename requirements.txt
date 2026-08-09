@@ -8,6 +8,10 @@
 # Configuration loading (optional — script falls back to defaults without it)
 pyyaml>=6.0
 
+# Web Interface
+flask>=3.0.0
+flask-cors>=4.0.0
+
 # ============================================================
 # NOTE: The following packages are NOT required for the active
 # SHARP pipeline. They were used by the archived Depth Pro and
