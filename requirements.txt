@@ -1,58 +1,24 @@
-# LucidPast - Python Dependencies
-# Tested on Python 3.10, Windows 11, CUDA 11.8
-
-# === CORE DEPENDENCIES ===
-# PyTorch (CUDA version - adjust URL for your CUDA version)
-# Install via: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-torch>=2.0.0
-torchvision>=0.15.0
-
-# Computer Vision
-opencv-python>=4.8.0
-opencv-contrib-python>=4.8.0
-
-# Image Processing
-Pillow>=10.0.0
-numpy>=1.24.0
-
-# 3D Mesh Processing
-open3d>=0.18.0
-
-# Utilities
-tqdm>=4.65.0  # Progress bars
-
-# === OPTIONAL DEPENDENCIES ===
-# Uncomment if needed:
-
-# Matplotlib (for depth map visualization)
-# matplotlib>=3.7.0
-
-# Scikit-image (advanced image processing)
-# scikit-image>=0.21.0
-
-# Trimesh (alternative mesh processing)
-# trimesh>=3.21.0
-
-# === DEVELOPMENT TOOLS ===
-# Uncomment for development:
-
-# Jupyter (for interactive testing)
-# jupyter>=1.0.0
-# ipython>=8.12.0
-
-# Code formatting
-# black>=23.0.0
-# flake8>=6.0.0
-
-# === NOTES ===
-# 1. Install PyTorch FIRST with CUDA support:
-#    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# LucidPast — Python Dependencies
+# Active pipeline: Apple SHARP (Gaussian Splatting)
 #
-# 2. Then install remaining dependencies:
-#    pip install -r requirements.txt
+# The SHARP CLI and its ML dependencies live inside env_sharp/.
+# This file lists only the dependencies needed by the batch processing
+# script (scripts/batch_sharp_gaussian.py).
+
+# Configuration loading (optional — script falls back to defaults without it)
+pyyaml>=6.0
+
+# ============================================================
+# NOTE: The following packages are NOT required for the active
+# SHARP pipeline. They were used by the archived Depth Pro and
+# Depth Anything V2 mesh pipelines. Listed here for reference
+# only — uncomment if you need to run archived scripts.
+# ============================================================
 #
-# 3. Verify CUDA:
-#    python -c "import torch; print(torch.cuda.is_available())"
-#
-# 4. Depth Anything V2 must be cloned separately:
-#    git clone https://github.com/DepthAnything/Depth-Anything-V2.git
+# torch>=2.0.0          # PyTorch with CUDA support
+# torchvision>=0.15.0   # Vision utilities
+# opencv-python>=4.8.0  # Image processing
+# numpy>=1.24.0         # Array operations
+# Pillow>=10.0.0        # Image loading
+# open3d>=0.18.0        # 3D mesh processing
+# tqdm>=4.65.0          # Progress bars

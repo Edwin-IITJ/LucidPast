@@ -1,285 +1,220 @@
-> ** Development Note**: This codebase was developed through AI-assisted prototyping using Claude (Anthropic) and Perplexity AI during a 2-week project sprint. Code is functional but follows rapid prototyping practices rather than production-grade architecture.
-
 # LucidPast
 
 Gaze-driven volumetric navigation system for spatial exploration of archival photographs in extended reality.
 
-## Project Overview
+LucidPast transforms 2D archival photographs into explorable 3D Gaussian Splat environments for VR/XR experiences. Users navigate historical photographs through natural gaze interaction, creating dream-like exploration of collective visual memory.
 
-LucidPast transforms 2D archival photographs into explorable 3D volumetric environments for VR experiences. Inspired by *Black Mirror: "Eulogy"* episode, this system enables users to navigate historical photographs through natural gaze, creating dream-like exploration of collective visual memory.
-
-### Core Concept
-
-**Input**: Single 2D archival photograph  
-**Output**: 3D textured mesh with authentic depth preservation  
-**Goal**: Natural attention-driven archival discovery  
-**Principle**: Limited parallax maintains historical authenticity without fabricating invisible content
+**Core principle:** Limited parallax maintains historical authenticity — what the photographer did not capture, the system does not invent.
 
 ---
 
-## Technical Pipeline
+## Quick Start
 
-Archival Photograph (TIFF/PNG/JPG)
-↓
-Depth Estimation (Apple Depth Pro)
-↓
-3D Point Cloud Generation
-↓
-Poisson Surface Reconstruction (Open3D)
-↓
-Textured Mesh Export (OBJ/PLY)
-↓
-Unity XR Integration (Phase 2)
-
----
-
-## Repository Structure
-
-LucidPast/
-│
-├── Scripts/
-│ ├── batch_depth_estimation_pro.py # Depth Pro batch processing
-│ ├── generate_3d_mesh_depthpro.py # Mesh generation pipeline
-│ ├── batch_depth_estimation.py        # DepthAnything V2 depth map generation
-│ ├── generate_3d_mesh_textured_gltf.py # DepthAnything V2 Mesh creation
-│ └── README.md
-│
-├── SourcePhotos/                         # Original archival images
-├── Meshes/                               # Output 3D meshes
-├── Meshes-DepthPro/                      # Output 3D meshes
-├── Depth-Maps/                           # Generated depth maps
-├── Depth-Maps-Pro/                       # Generated depth maps
-├── Textures/                             # PNG texture files
-├── Depth-Anything-V2/                    # External model repo (submodule)
-├── ml-depth-pro/                         # External model repo (submodule)
-│
-├── .gitignore
-├── requirements.txt
-└── README.md
-
-Large binary files (source photos, depth maps, meshes) are excluded via .gitignore.
-
----
-
-## Prerequisites
-
-**Python**: 3.8 to 3.10  
-**GPU**: CUDA compatible (tested on RTX 3060 6GB)  
-**RAM**: 16GB minimum  
-**OS**: Windows 10/11, macOS, Linux
-
----
-
-## Installation
-
-### 1. Clone Repository
-
+```bash
+# 1. Clone
 git clone https://github.com/Edwin-IITJ/LucidPast.git
 cd LucidPast
 
-### 2. Set Up Python Environment
+# 2. Set up the SHARP environment (requires env_sharp with sharp CLI)
+#    See "Environment Setup" below
 
-python -m venv env
-source env/bin/activate # On Windows: env\Scripts\activate
-pip install -r requirements.txt
+# 3. Place source photographs in input/
+#    Supported formats: TIFF, PNG, JPG, BMP
 
-### 3. Install Apple Depth Pro
+# 4. Run the pipeline
+python scripts/batch_sharp_gaussian.py
 
-pip install git+https://github.com/apple/ml-depth-pro.git
-
-### 4. Verify Installation
-
-python -c "import torch; print(torch.cuda.is_available())"
-python -c "import open3d; print(open3d.version)"
+# 5. Find your Gaussian Splats in output/gaussians/<image_name>/
+```
 
 ---
 
-## Usage
+## How It Works
 
-### Step 1: Prepare Source Photographs
+```
+Archival Photograph (TIFF/PNG/JPG)
+        ↓
+Apple SHARP Model (Gaussian Splatting)
+        ↓
+3D Gaussian Splat (.ply)
+        ↓
+XR Viewer / Unity Integration
+```
 
-Place archival photographs in `SourcePhotos/` directory.  
-Supported formats: TIFF, PNG, JPG
+The pipeline uses **Apple SHARP** to generate photorealistic Gaussian Splats from single photographs in under 1 second per image. SHARP preserves fine photographic texture — film grain, tonal gradation, edge softness — that traditional polygon mesh pipelines lose during reconstruction.
 
-### Step 2: Generate Depth Maps
+### Why SHARP?
 
-cd Scripts
-python batch_depth_estimation_pro.py
+After testing three approaches on a dataset of 10 diverse archival photographs:
 
-Output: `DepthMaps-DepthPro/[filename]_depth.png`
+| Approach | Quality | Speed | Ethical Constraint |
+|----------|---------|-------|--------------------|
+| Depth Anything V2 → Mesh | Soft portrait edges | ~2s depth + ~20min mesh | Manual |
+| Apple Depth Pro → Mesh | Sharp boundaries | ~10s depth + ~20min mesh | Manual |
+| **Apple SHARP → Splat** | **Photorealistic** | **<1s total** | **Architectural** |
 
-### Step 3: Create 3D Meshes
+SHARP's limited parallax range naturally prevents fabricating viewpoints the original camera never captured — enforcing the project's ethical constraint architecturally rather than by convention.
 
-python generate_3d_mesh_depthpro.py
-
-Output:  
-`Meshes-DepthPro/[filename].obj` (mesh with UV coordinates)  
-`Meshes-DepthPro/[filename].ply` (mesh with vertex colors)
-
-### Step 4: Import to Blender
-
-1. File > Import > Wavefront (.obj)
-2. Select mesh from Meshes-DepthPro/ folder
-3. Edit Mode > Select All > Mesh > Normals > Recalculate Outside
-4. Material Properties > Add Material > Image Texture
-5. Link texture from SourcePhotos/ folder
+> See [`_archive/README.md`](_archive/README.md) for the full pipeline comparison history and archived scripts.
 
 ---
 
-## Dependencies
+## Project Structure
 
-torch>=2.0.0 # PyTorch with CUDA support
-torchvision>=0.15.0 # Vision utilities
-opencv-python>=4.8.0 # Image processing
-numpy>=1.24.0 # Array operations
-Pillow>=10.0.0 # Image loading
-open3d>=0.18.0 # 3D mesh processing
-ml-depth-pro # Apple Depth Pro model
+```
+LucidPast/
+├── scripts/
+│   └── batch_sharp_gaussian.py   # Batch SHARP processing pipeline
+├── input/                        # Source archival photographs
+├── output/
+│   └── gaussians/                # Generated Gaussian Splats (one folder per image)
+├── ml-sharp/                     # SHARP model repository + checkpoint
+├── env_sharp/                    # Python environment with SHARP CLI
+├── _archive/                     # Legacy pipeline scripts (Depth Anything V2, Depth Pro)
+│   ├── README.md                 # What was archived and why
+│   └── scripts/                  # 7 archived scripts from earlier iterations
+├── config.yaml                   # Centralized configuration
+├── requirements.txt              # Python dependencies
+├── LICENSE                       # MIT License
+└── README.md
+```
+
+Large binary files (source photos, depth maps, meshes, splats) are excluded via `.gitignore`.
 
 ---
 
-## Design Rationale
+## Environment Setup
 
-### Depth Model Selection
+### Prerequisites
 
-**Depth Pro** was selected over Depth Anything V2 after comparison testing.
+- **Python**: 3.10+
+- **GPU**: CUDA-compatible (tested on RTX 3060 6GB)
+- **OS**: Windows 10/11
 
-| Aspect | Depth Anything V2 | Depth Pro |
-|--------|-------------------|-----------|
-| Facial detail | Soft edges | Sharp boundaries |
-| Portrait quality | Adequate | Superior |
-| Design priority | Speed | Quality |
+### SHARP Environment
 
-**Decision**: Portrait fidelity prioritized over processing speed for human-centered archival documentation.
+The SHARP pipeline requires a dedicated Python environment with the `sharp` CLI tool:
 
-### Test Dataset Diversity
+```bash
+# The env_sharp/ directory should contain the SHARP CLI executable at:
+# env_sharp/Scripts/sharp.exe (Windows)
 
-10 environments from 9 photographs tested across:
+# The SHARP model checkpoint should be at:
+# ml-sharp/sharp_model.pt
+```
 
-**Close-up portraits**: Migrant Mother (two crops), Helen Keller  
-**Crowd scenes**: Martin Luther King Jr. gathering  
-**Unusual lighting**: Nikola Tesla double exposure  
-**Extreme conditions**: Buzz Aldrin lunar surface  
-**Interior spaces**: 1940s diner, 1942 radio studio
-
-All conditions generated convincing volumetric reconstructions with proper depth layering.
-
-### Processing Performance
-
-**Hardware**: RTX 3060 6GB, 16GB RAM
-
-**Timing breakdown**:
-- Total processing: 8-9 hours
-
-### Memory Optimization
-
-Images exceeding 35 megapixels automatically downsample while preserving aspect ratio.  
-Reduces memory requirements by 40 to 60 percent while maintaining perceptual quality for VR viewing.
+> **Note:** The SHARP model and environment are not included in this repository due to size. Contact the repository owner or refer to Apple's SHARP documentation for setup instructions.
 
 ---
 
 ## Configuration
 
-### Key Parameters (in generate_3d_mesh_depthpro.py)
+All settings are centralized in [`config.yaml`](config.yaml):
 
-POISSON_DEPTH = 10 # Surface reconstruction detail level
-MAX_MEGAPIXELS = 35 # Automatic downsampling threshold
-DEPTH_INVERSION = True # Depth Pro requires inversion
+```yaml
+pipeline: sharp
 
-### Ethical Constraints
+paths:
+  input_dir: input                          # Source photographs
+  output_dir: output/gaussians              # Splat output
+  checkpoint: ml-sharp/sharp_model.pt       # Model weights
+  sharp_exe: env_sharp/Scripts/sharp.exe    # SHARP CLI
 
-Users can move head position to perceive depth through parallax, but movement is constrained.  
-System prevents viewing angles the original camera never captured.  
-No AI fabrication beyond depth inference from visible photograph content.
+sharp:
+  supported_extensions:
+    - .jpg
+    - .jpeg
+    - .png
+    - .tiff
+    - .tif
+    - .bmp
+```
+
+You can also specify an alternate config file:
+
+```bash
+python scripts/batch_sharp_gaussian.py --config path/to/custom_config.yaml
+```
+
+If `config.yaml` is missing or `pyyaml` is not installed, the script falls back to hardcoded defaults.
 
 ---
 
-## Interaction Design (Phase 2 Implementation)
+## Test Dataset
 
-### Gaze Navigation
+The pipeline has been validated across 10 diverse archival photographs:
 
-**Dwell time**: 1 second (research-based optimal duration)  
-**Visual feedback**: Radial progress indicator  
-**Transition**: 3 second dream-like sequence with Gaussian blur and vignette
+| Image | Category | Source |
+|-------|----------|--------|
+| Migrant Mother (two crops) | Close-up portrait | Library of Congress |
+| Helen Keller | Close-up portrait | Library of Congress |
+| MLK gathering | Crowd scene | Library of Congress |
+| Nikola Tesla | Unusual lighting (double exposure) | Wikimedia Commons |
+| Buzz Aldrin | Extreme environment (lunar surface) | NASA |
+| 1940s diner (two angles) | Interior architecture | Library of Congress |
+| 1942 radio studio | Interior architecture | Library of Congress |
+| Gandhi | Group of people | Wikimedia Commons |
 
-### Progressive Thematic Narrowing
-
-**Minutes 0 to 7**: Open exploration (algorithm observes patterns)  
-**Minutes 7 to 13**: Emerging theme (subtle guidance begins)  
-**Minutes 13 to 20**: Narrative clarity (focused sequence)
-
-Algorithm operates invisibly. Users perceive continued free exploration while backend shapes thematic coherence.
-
-### Spatial Voice Annotations
-
-**Gesture**: Pinch near mouth activates recording  
-**Duration**: Up to 60 seconds  
-**Interface**: YouTube-style comment organization  
-**Purpose**: Community interpretation layer without institutional hierarchy
+All conditions generated convincing volumetric reconstructions with proper depth layering.
 
 ---
 
 ## Troubleshooting
 
+### SHARP executable not found
+
+Ensure `env_sharp/Scripts/sharp.exe` exists. The path can be customized in `config.yaml`.
+
+### "Already processed" skipping
+
+The script skips images whose output folder already contains files. To reprocess, delete the corresponding subfolder in `output/gaussians/`.
+
 ### CUDA out of memory
 
-Add `torch.cuda.empty_cache()` after each image in batch processing script.
+SHARP is designed to be memory-efficient, but very large images (>50 MP) may cause issues. Consider downsampling source images before processing.
 
-### Inverted normals in Blender
+---
 
-Edit Mode > Select All > Mesh > Normals > Recalculate Outside
+## Design History
 
-### Depth Pro depth inversion
+This project evolved through three technical iterations during a 2-week design sprint:
 
-Ensure `DEPTH_INVERSION = True` in mesh generation script.  
-Depth Pro uses inverted depth convention (black = near, white = far).
+1. **Depth Anything V2 → Poisson Mesh** (Nov 2025) — Good generalization but soft portrait edges
+2. **Apple Depth Pro → Poisson Mesh** (Nov 2025) — Sharp boundaries, but 4-step pipeline
+3. **Apple SHARP → Gaussian Splat** (Dec 2025) — Final selection, photorealistic in <1 second
+
+The interaction design (gaze navigation, progressive thematic narrowing, pathway-dependent interpretation) is documented in the project's design report and portfolio case study.
+
+All legacy pipeline scripts are preserved in [`_archive/`](_archive/README.md).
 
 ---
 
 ## References
 
+**SHARP**: Apple Machine Learning Research, 2025. Single-image to Gaussian Splat reconstruction.
+
 **Depth Pro**: Bochkovskii, A., et al. "Depth Pro: Sharp Monocular Metric Depth in Less Than a Second." Apple Machine Learning Research, 2024.
 
 **Depth Anything V2**: Yang, L., et al. "Depth Anything V2." arXiv:2406.09414, 2024.
-
-**Open3D**: Zhou, Q., et al. "Open3D: A Modern Library for 3D Data Processing." arXiv:1801.09847, 2018.
-
----
-
-## Phase 1 Achievements
-
-**Complete interaction design**: User journey, gaze navigation patterns, voice annotation system, multi-user reflection spaces
-
-**Research-based parameters**: 1 second gaze dwell time, 25 second environment familiarization, 3 second dream transitions
-
-**Technical validation**: 10 diverse archival photographs successfully converted to explorable volumetric environments
-
-**Design framework**: Pathway-dependent interpretation through contextual priming and Kuleshov Effect application
 
 ---
 
 ## License
 
-**Project License**: Creative Commons Attribution 4.0 International (CC BY 4.0)
+**Project License**: MIT License
 
-You are free to:
-- Use this project for any purpose (commercial or non-commercial)
-- Modify and build upon this work
-- Share and redistribute
-
-**Under the following terms**:
-- **Attribution required**: Credit Edwin Meleth and link to this repository
+Copyright (c) 2025 Edwin Meleth
 
 **Recommended Citation**:
+```
 LucidPast: Gaze-Driven Volumetric Navigation Through Archival Memory
 Edwin Meleth, IIT Jodhpur (2025)
 https://github.com/Edwin-IITJ/LucidPast
+```
 
-**Code Components**: MIT License (includes attribution clause)
-
-**Archival Photographs**: Public domain sources (Library of Congress, Wikimedia Commons)  
-Original photos not subject to copyright. Attribution to original photographers encouraged.
+**Archival Photographs**: Public domain sources (Library of Congress, Wikimedia Commons, NASA).
 
 **Third-Party Dependencies**:
-- Apple Depth Pro: Apache 2.0 License
-- Open3D: MIT License
+- Apple SHARP: Apple ML Research License
+- Apple Depth Pro: Apache 2.0 License (archived pipeline)
+- Open3D: MIT License (archived pipeline)

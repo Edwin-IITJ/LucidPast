@@ -1,0 +1,24 @@
+# ============================================================
+# LucidPast Configuration
+# ============================================================
+# All paths are relative to this file's location (project root).
+# Edit these values instead of modifying the Python scripts.
+
+pipeline: sharp  # Active pipeline (only 'sharp' is currently supported)
+
+# --- Paths -----------------------------------------------
+paths:
+  input_dir: input                          # Source photographs (TIFF/PNG/JPG)
+  output_dir: output/gaussians              # SHARP Gaussian splat output
+  checkpoint: ml-sharp/sharp_model.pt       # SHARP model weights
+  sharp_exe: env_sharp/Scripts/sharp.exe    # SHARP CLI executable
+
+# --- SHARP pipeline settings ------------------------------
+sharp:
+  supported_extensions:
+    - .jpg
+    - .jpeg
+    - .png
+    - .tiff
+    - .tif
+    - .bmp
