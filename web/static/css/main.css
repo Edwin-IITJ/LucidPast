@@ -17,6 +17,7 @@
 
 body {
     background-color: var(--bg-color);
+    color: var(--text-color);
     font-family: 'Space Grotesk', sans-serif;
     overflow: hidden; /* Prevent scrolling, SPA feel */
     height: 100vh;
