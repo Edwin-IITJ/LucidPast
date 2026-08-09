@@ -58,6 +58,7 @@ The pipeline uses **Apple SHARP** to generate photorealistic Gaussian Splats fro
 
 ### Future Improvements
 - **Audio Soundscape:** A subtle ambient soundscape for the VR environment to further enhance the "Eulogy" aesthetic (currently pure silence).
+- **Auto-Alignment via Face Detection:** Automatically detect faces within the generated splat and align the starting camera height to eye-level for an optimal first-person experience.
 
 ### Why SHARP?
 

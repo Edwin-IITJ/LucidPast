@@ -11,10 +11,10 @@ class SplatViewer {
         // Clear container if needed
         this.container.innerHTML = '';
         
-        // Initialize viewer
+        // Initialize viewer without built-in controls
         this.viewer = new GaussianSplats3D.Viewer({
             selfDrivenMode: true,
-            useBuiltInControls: true,
+            useBuiltInControls: false,
             rootElement: this.container,
             cameraUp: [0, -1, -0.6], // SHARP y-axis might need adjustment, this is a common preset
             initialCameraPosition: [0, 0, 5],
@@ -30,6 +30,80 @@ class SplatViewer {
         this.scene = this.viewer.splatMesh.scene || this.viewer.scene;
         this.camera = this.viewer.camera;
         this.renderer = this.viewer.renderer;
+        
+        this.setupCustomControls();
+    }
+
+    setupCustomControls() {
+        // --- FPS Camera State ---
+        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+        this.isDragging = false;
+        this.previousMousePosition = { x: 0, y: 0 };
+        this.moveSpeed = 0.05;
+        this.lookSpeed = 0.003;
+        
+        // --- Euler for Rotation ---
+        this.euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        this.euler.setFromQuaternion(this.camera.quaternion);
+
+        // --- Mouse Events ---
+        this.container.addEventListener('mousedown', (e) => {
+            this.isDragging = true;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (this.isDragging) {
+                const deltaX = e.movementX || (e.clientX - this.previousMousePosition.x);
+                const deltaY = e.movementY || (e.clientY - this.previousMousePosition.y);
+                
+                this.euler.y -= deltaX * this.lookSpeed;
+                this.euler.x -= deltaY * this.lookSpeed;
+                
+                // Clamp pitch
+                this.euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.euler.x));
+                
+                this.camera.quaternion.setFromEuler(this.euler);
+            }
+            this.previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        document.addEventListener('mouseup', () => {
+            this.isDragging = false;
+        });
+
+        // --- Keyboard Events ---
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() in this.keys) this.keys[e.key.toLowerCase()] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key.toLowerCase() in this.keys) this.keys[e.key.toLowerCase()] = false;
+        });
+
+        // --- Movement Loop ---
+        const updateMovement = () => {
+            requestAnimationFrame(updateMovement);
+            if (!this.camera) return;
+
+            const direction = new THREE.Vector3();
+            const right = new THREE.Vector3();
+            const up = new THREE.Vector3(0, 1, 0); // Global up vector for Q/E
+
+            this.camera.getWorldDirection(direction);
+            direction.y = 0; // Move horizontally
+            direction.normalize();
+
+            right.crossVectors(this.camera.up, direction).normalize();
+
+            if (this.keys.w) this.camera.position.addScaledVector(direction, this.moveSpeed);
+            if (this.keys.s) this.camera.position.addScaledVector(direction, -this.moveSpeed);
+            if (this.keys.a) this.camera.position.addScaledVector(right, this.moveSpeed);
+            if (this.keys.d) this.camera.position.addScaledVector(right, -this.moveSpeed);
+            if (this.keys.e) this.camera.position.addScaledVector(up, this.moveSpeed);
+            if (this.keys.q) this.camera.position.addScaledVector(up, -this.moveSpeed);
+        };
+
+        updateMovement();
     }
 
     async loadScene(sceneName, fileName) {
