@@ -1,0 +1,355 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>LucidPast — Video Splat Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
+
+    #hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      color: #eee;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      line-height: 1.5;
+    }
+
+    #hud .label {
+      color: #888;
+      font-size: 11px;
+    }
+
+    #controls-help {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      z-index: 10;
+      color: #999;
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      line-height: 1.6;
+    }
+
+    #controls-help kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-family: inherit;
+    }
+
+    #playback-bar {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #playback-bar button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #eee;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    #playback-bar button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    #playback-bar button.active {
+      background: rgba(100, 200, 255, 0.3);
+      border-color: rgba(100, 200, 255, 0.5);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="hud">
+    <div id="hud-frame">Loading...</div>
+    <div class="label" id="hud-speed"></div>
+  </div>
+
+  <div id="controls-help">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;
+    <kbd>Q</kbd><kbd>E</kbd> Down/Up &nbsp;
+    <kbd>Drag</kbd> Look &nbsp;
+    <kbd>Scroll</kbd> Speed<br>
+    <kbd>Space</kbd> Play/Pause &nbsp;
+    <kbd>←</kbd><kbd>→</kbd> Step frame
+  </div>
+
+  <div id="playback-bar">
+    <button id="btn-prev" title="Previous frame">◀</button>
+    <button id="btn-play" class="active" title="Play/Pause">⏸</button>
+    <button id="btn-next" title="Next frame">▶</button>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from "three";
+
+    // ─── FPS Controls (inline copy of shared/fps-controls.js) ───
+    // When served standalone from output/<video>/, we can't import across
+    // directories, so we inline the controls. The canonical source remains
+    // Video/shared/fps-controls.js.
+
+    class FPSControls {
+      constructor(camera, domElement, options = {}) {
+        this.camera = camera;
+        this.domElement = domElement;
+        this.moveSpeed = options.moveSpeed ?? 0.05;
+        this.lookSpeed = options.lookSpeed ?? 0.003;
+        this.minSpeed = options.minSpeed ?? 0.001;
+        this.maxSpeed = options.maxSpeed ?? 5.0;
+        this.speedMultiplier = options.speedMultiplier ?? 1.2;
+        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+        this.isDragging = false;
+        this.previousMousePosition = { x: 0, y: 0 };
+        this.euler = new THREE.Euler(0, 0, 0, "YXZ");
+        this.euler.setFromQuaternion(this.camera.quaternion);
+        this._onMouseDown = () => { this.isDragging = true; };
+        this._onMouseMove = (e) => {
+          if (this.isDragging) {
+            const dx = e.movementX || (e.clientX - this.previousMousePosition.x);
+            const dy = e.movementY || (e.clientY - this.previousMousePosition.y);
+            this.euler.y -= dx * this.lookSpeed;
+            this.euler.x -= dy * this.lookSpeed;
+            this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
+            this.camera.quaternion.setFromEuler(this.euler);
+          }
+          this.previousMousePosition = { x: e.clientX, y: e.clientY };
+        };
+        this._onMouseUp = () => { this.isDragging = false; };
+        this._onWheel = (e) => {
+          e.preventDefault();
+          if (e.deltaY < 0) this.moveSpeed = Math.min(this.moveSpeed * this.speedMultiplier, this.maxSpeed);
+          else if (e.deltaY > 0) this.moveSpeed = Math.max(this.moveSpeed / this.speedMultiplier, this.minSpeed);
+        };
+        this._onKeyDown = (e) => { const k = e.key.toLowerCase(); if (k in this.keys) this.keys[k] = true; };
+        this._onKeyUp = (e) => { const k = e.key.toLowerCase(); if (k in this.keys) this.keys[k] = false; };
+        domElement.addEventListener("mousedown", this._onMouseDown);
+        document.addEventListener("mousemove", this._onMouseMove);
+        document.addEventListener("mouseup", this._onMouseUp);
+        domElement.addEventListener("wheel", this._onWheel, { passive: false });
+        domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.addEventListener("keydown", this._onKeyDown);
+        document.addEventListener("keyup", this._onKeyUp);
+      }
+      update() {
+        if (!this.camera) return;
+        const dir = new THREE.Vector3();
+        const right = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        this.camera.getWorldDirection(dir);
+        dir.y = 0; dir.normalize();
+        right.crossVectors(this.camera.up, dir).normalize();
+        if (this.keys.w) this.camera.position.addScaledVector(dir, this.moveSpeed);
+        if (this.keys.s) this.camera.position.addScaledVector(dir, -this.moveSpeed);
+        if (this.keys.a) this.camera.position.addScaledVector(right, this.moveSpeed);
+        if (this.keys.d) this.camera.position.addScaledVector(right, -this.moveSpeed);
+        if (this.keys.e) this.camera.position.addScaledVector(up, this.moveSpeed);
+        if (this.keys.q) this.camera.position.addScaledVector(up, -this.moveSpeed);
+      }
+    }
+
+    // ─── Config ───
+    const PLAYBACK_FPS = 8;
+
+    // ─── DOM refs ───
+    const hudFrame = document.getElementById("hud-frame");
+    const hudSpeed = document.getElementById("hud-speed");
+    const btnPlay = document.getElementById("btn-play");
+    const btnPrev = document.getElementById("btn-prev");
+    const btnNext = document.getElementById("btn-next");
+
+    // ─── Three.js setup ───
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 500);
+    camera.position.set(0, 0, 3);
+
+    const controls = new FPSControls(camera, renderer.domElement);
+
+    // ─── Splat parser ───
+    const C0 = 0.28209479177387814; // SH0 coefficient — not used here, color is already in uint8
+
+    function parseSplat(buffer) {
+      const count = buffer.byteLength / 32;
+      const f32 = new Float32Array(buffer);
+      const u8 = new Uint8Array(buffer);
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        const fo = i * 8;    // float32 offset (32 bytes / 4)
+        const bo = i * 32;   // byte offset
+
+        positions[i * 3] = f32[fo];
+        positions[i * 3 + 1] = f32[fo + 1];
+        positions[i * 3 + 2] = f32[fo + 2];
+
+        colors[i * 3] = u8[bo + 24] / 255;
+        colors[i * 3 + 1] = u8[bo + 25] / 255;
+        colors[i * 3 + 2] = u8[bo + 26] / 255;
+      }
+      return { positions, colors, count };
+    }
+
+    // ─── Frame management ───
+    let frames = [];
+    let frameCache = [];
+    let idx = 0;
+    let playing = true;
+    let lastFrameTime = 0;
+    let currentPoints = null;
+
+    function showParsedFrame(data, name) {
+      if (currentPoints) {
+        scene.remove(currentPoints);
+        currentPoints.geometry.dispose();
+        currentPoints.material.dispose();
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(data.positions, 3));
+      geo.setAttribute("color", new THREE.BufferAttribute(data.colors, 3));
+      const mat = new THREE.PointsMaterial({
+        size: 0.005, vertexColors: true, sizeAttenuation: true,
+        transparent: true, opacity: 0.85,
+      });
+      currentPoints = new THREE.Points(geo, mat);
+      
+      // SHARP/COLMAP uses Y-down, Z-forward; WebGL is Y-up, Z-backward
+      // Flip the mesh 180 degrees around the X axis to correct it
+      currentPoints.rotation.x = Math.PI;
+      
+      scene.add(currentPoints);
+      hudFrame.textContent = `Frame ${idx + 1}/${frames.length}: ${name} (${data.count.toLocaleString()} pts)`;
+    }
+
+    async function loadFrame(i) {
+      if (frameCache[i]) return frameCache[i];
+      const res = await fetch(frames[i]);
+      const buf = await res.arrayBuffer();
+      const parsed = parseSplat(buf);
+      frameCache[i] = parsed;
+      return parsed;
+    }
+
+    async function showFrame(i) {
+      try {
+        const data = await loadFrame(i);
+        showParsedFrame(data, frames[i]);
+        // Preload neighbors
+        const next = (i + 1) % frames.length;
+        const prev = (i - 1 + frames.length) % frames.length;
+        if (!frameCache[next]) loadFrame(next);
+        if (!frameCache[prev]) loadFrame(prev);
+      } catch (e) {
+        hudFrame.textContent = `Error: ${e.message}`;
+      }
+    }
+
+    async function loadManifest() {
+      const res = await fetch("manifest.json");
+      frames = await res.json();
+      frameCache = new Array(frames.length).fill(null);
+      hudFrame.textContent = `${frames.length} frames. Loading...`;
+      if (frames.length) await showFrame(0);
+    }
+
+    loadManifest();
+
+    // ─── Playback ───
+    function stepForward() {
+      idx = (idx + 1) % frames.length;
+      showFrame(idx);
+    }
+    function stepBackward() {
+      idx = (idx - 1 + frames.length) % frames.length;
+      showFrame(idx);
+    }
+    function togglePlay() {
+      playing = !playing;
+      btnPlay.textContent = playing ? "⏸" : "▶";
+      btnPlay.classList.toggle("active", playing);
+    }
+
+    btnPlay.addEventListener("click", togglePlay);
+    btnPrev.addEventListener("click", () => { if (!playing) stepBackward(); });
+    btnNext.addEventListener("click", () => { if (!playing) stepForward(); });
+
+    // ─── Keyboard (playback keys only — movement is handled by FPSControls) ───
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+      if (e.code === "ArrowRight" && !playing) stepForward();
+      if (e.code === "ArrowLeft" && !playing) stepBackward();
+    });
+
+    // ─── Render loop ───
+    function animate(time) {
+      requestAnimationFrame(animate);
+      controls.update();
+      hudSpeed.textContent = `Speed: ${controls.moveSpeed.toFixed(3)}`;
+
+      if (playing && frames.length > 0) {
+        if (time - lastFrameTime >= 1000 / PLAYBACK_FPS) {
+          lastFrameTime = time;
+          stepForward();
+        }
+      }
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+
+    // ─── Resize ───
+    window.addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+
+</html>
