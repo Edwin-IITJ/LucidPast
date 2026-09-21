@@ -61,36 +61,35 @@ Video/
 
 ## Phases
 
-### Phase 0 — Spike ✦ CURRENT PHASE
+### Phase 0 — Spike ✦ COMPLETE
 
-> **Goal:** Answer one question — how much does per-frame SHARP flicker on video?
+> **Phase 0 exit criteria answered. Phase 3 is confirmed required. Moving to Phase 1.**
 
-**What exists:** Three scripts in `phase0-spike/`. See the [Phase 0 README](phase0-spike/scripts/README.md) below for step-by-step instructions.
+**Two clips tested:** `testclip` (B&W, static camera) and `testclip2` (color, moving camera/dashcam POV).
 
-**Quick version:**
-```bash
-# 1. Extract frames from a 5–10s archival clip
-bash phase0-spike/scripts/extract_frames.sh clip.mp4 output/frames 8 1024
+**Exit criteria — all three answered:**
 
-# 2. Run SHARP on each frame (every 3rd frame for a cheap first pass)
-python phase0-spike/scripts/run_sharp_batch.py output/frames output/splats 3
+1. **Is Phase 3 (temporal smoothing) needed?** ✅ **YES — mandatory, not optional.**
+   - Both clips show severe multi-tier flicker: edge scatter (both), shadow blobs on people/vehicles (color), and full-scene geometry warp on every camera move.
+   - Phase 3 scope must be full-scene, not edge-only.
 
-# 3. View the raw sequence
-cp phase0-spike/viewer/view_sequence.html output/splats/
-cd output/splats && python -m http.server 8000
-# Open http://localhost:8000/view_sequence.html
-```
+2. **Gaussians/frame?** ✅ **1,179,648 — fixed by SHARP regardless of scene.**
+   - ~36 MB per frame (uncompressed `.splat`). 22 frames = ~792 MB raw. Phase 4 compression is non-negotiable.
 
-**Exit criteria — answer all three before moving on:**
-1. Is flicker bad enough to require Phase 3 (temporal smoothing)?
-2. How many Gaussians does a typical frame produce? (Sets compression budget.)
-3. Do failures cluster around specific frame types? (Motion blur, damaged film, etc.)
+3. **Do failures cluster?** ✅ **No failures — 57/57 frames clean (35 + 22).**
+   - SHARP is robust. Phase 2 error-handling is low priority.
+
+**Key timing data:**
+| Clip | Frames | Failures | Mean time | Max time |
+|---|---|---|---|---|
+| testclip (B&W, static) | 35/35 | 0 | ~58.9s | ~74.5s |
+| testclip2 (color, moving) | 22/22 | 0 | ~64.5s | 99.7s |
+
+> Outputs in `Video/output/testclip/` and `Video/output/testclip2/` **preserved as-is** for A/B comparison with Phase 3 output.
 
 ---
 
-### Phase 1 — Ingest & Preprocess `pipeline/ingest/`
-
-> **Status:** Not started. Build only after Phase 0 is complete.
+### Phase 1 — Ingest & Preprocess `pipeline/ingest/` ✦ CURRENT PHASE
 
 - ffmpeg frame extraction (handle any common container/codec)
 - Shot-cut detection — classical histogram/edge-based, not a learned model. Each shot becomes its own reconstruction run because a cut is a scene discontinuity.
@@ -98,13 +97,18 @@ cd output/splats && python -m http.server 8000
 
 ---
 
-### Phase 2 — Reconstruct `pipeline/reconstruct/`
+### Phase 2 — Reconstruct `pipeline/reconstruct/` ✦ COMPLETE
 
-> **Status:** Not started.
+> **Status:** Both test clips reconstructed successfully. 57/57 frames, zero failures.
 
-- Production-grade batch wrapper: frame directory in → per-frame `.ply` out
-- Handle SHARP's expected input resolution/aspect ratio explicitly — archival footage often deviates from modern norms
-- Flag anomalous frames (depth-range outliers) for manual review
+| Clip | Frames | Failures | Gaussians/frame | Avg time/frame | Total |
+|---|---|---|---|---|---|
+| testclip (B&W, static) | 35/35 | 0 | 1,179,648 | ~92s | ~54 min |
+| testclip2 (color, moving) | 22/22 | 0 | 1,179,648 | ~109s | ~40 min |
+
+- Production-grade SHARP wrapper with resume support, ETA, and anomaly detection
+- Integrated `.ply` → `.splat` conversion (no separate step)
+- Auto-detects SHARP exe and checkpoint from project layout
 
 ---
 
