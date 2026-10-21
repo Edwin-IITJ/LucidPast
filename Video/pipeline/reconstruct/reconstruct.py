@@ -224,7 +224,7 @@ def _run_sharp_frame(
 def reconstruct(
     ingest_dir: Path,
     output_dir: Path | None = None,
-    every_nth: int = 3,
+    every_nth: int = 1,
     sharp_exe: Path | None = None,
     checkpoint: Path | None = None,
     timeout: int = _DEFAULT_TIMEOUT,
@@ -240,7 +240,7 @@ def reconstruct(
     output_dir : Path or None
         Where to write .ply/.splat files. Default: pipeline/reconstruct/output/<clip>/
     every_nth : int
-        Process every Nth frame (default 3, same as spike).
+        Process every Nth frame (default 1 = all frames).
     sharp_exe : Path or None
         Path to sharp.exe. Default from config.yaml / project layout.
     checkpoint : Path or None
@@ -442,8 +442,8 @@ def main():
     )
     parser.add_argument("ingest_dir", type=Path,
                         help="Phase 1 output directory (contains frames/ and shots.json)")
-    parser.add_argument("--every-nth", type=int, default=3,
-                        help="Process every Nth frame (default: 3)")
+    parser.add_argument("--every-nth", type=int, default=1,
+                        help="Process every Nth frame (default: 1 = all frames)")
     parser.add_argument("--timeout", type=int, default=_DEFAULT_TIMEOUT,
                         help=f"Per-frame timeout in seconds (default: {_DEFAULT_TIMEOUT})")
     parser.add_argument("--sharp-exe", type=Path, default=None,

@@ -99,26 +99,30 @@ Video/
 
 ### Phase 2 — Reconstruct `pipeline/reconstruct/` ✦ COMPLETE
 
-> **Status:** Both test clips reconstructed successfully. 57/57 frames, zero failures.
+> **Status:** Verified on both test clips (every 3rd frame). Default changed to **every frame** for production quality.
 
-| Clip | Frames | Failures | Gaussians/frame | Avg time/frame | Total |
+| Clip | Frames (every 3rd) | Failures | Gaussians/frame | Avg time/frame | Total |
 |---|---|---|---|---|---|
-| testclip (B&W, static) | 35/35 | 0 | 1,179,648 | ~92s | ~54 min |
-| testclip2 (color, moving) | 22/22 | 0 | 1,179,648 | ~109s | ~40 min |
+| testclip (B&W, static) | 35/103 | 0 | 1,179,648 | ~92s | ~54 min |
+| testclip2 (color, moving) | 22/65 | 0 | 1,179,648 | ~109s | ~40 min |
 
 - Production-grade SHARP wrapper with resume support, ETA, and anomaly detection
 - Integrated `.ply` → `.splat` conversion (no separate step)
 - Auto-detects SHARP exe and checkpoint from project layout
+- **Default changed to `--every-nth 1`** — frame density is the biggest quality lever
 
 ---
 
-### Phase 3 — Temporal Consistency `pipeline/temporal/`
+### Phase 3 — Temporal Consistency `pipeline/temporal/` ✦ COMPLETE (v2)
 
-> **Status:** Not started. **Conditional on Phase 0 findings.**
+> **Status:** Shadow suppression only (recommended). Color EMA available but disabled by default.
 
-- Only build if the spike shows real flicker
-- Approach: optical-flow-guided smoothing across frame Gaussian positions — classical, deterministic, no diffusion video-depth models
-- If Phase 0 looks acceptable, skip this and note it as a stretch goal
+**Key finding:** Frame density (Phase 2) matters more than temporal smoothing (Phase 3).
+- v1 position smoothing destroyed geometry for moving camera footage
+- v2 color EMA washed out saturation
+- Shadow blob suppression remains useful (140,602 transient blobs suppressed across both clips)
+
+Current default: **geometry frozen, no color EMA, shadow suppression ON**.
 
 ---
 

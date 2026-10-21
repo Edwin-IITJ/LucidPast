@@ -1,6 +1,6 @@
 # Phase 2 — Reconstruct (SHARP Wrapper)
 
-> **Status: COMPLETE.** 57/57 frames across both test clips, zero failures, 1,179,648 Gaussians/frame.
+> **Status: COMPLETE.** Verified on both test clips (every 3rd frame). Default changed to every frame for production quality.
 
 ## Scope
 
@@ -13,11 +13,11 @@ Production-grade batch wrapper around Apple SHARP. Reads clean frames from Phase
 ```bash
 python reconstruct.py <ingest_output_dir> [options]
 
-# Process Phase 1 output for testclip2 (every 3rd frame):
+# Process all frames (default — best quality):
 python reconstruct.py ../ingest/output/testclip2
 
-# Process every frame:
-python reconstruct.py ../ingest/output/testclip2 --every-nth 1
+# Process every 3rd frame (faster, lower quality):
+python reconstruct.py ../ingest/output/testclip2 --every-nth 3
 
 # Resume an interrupted run (auto-skips existing .ply files):
 python reconstruct.py ../ingest/output/testclip2
@@ -38,7 +38,7 @@ python reconstruct.py ../ingest/output/testclip2
 
 | Flag | Default | Description |
 |---|---|---|
-| `--every-nth N` | `3` | Process every Nth frame |
+| `--every-nth N` | `1` | Process every Nth frame (1 = all frames) |
 | `--timeout N` | `300` | Per-frame timeout in seconds |
 | `--sharp-exe PATH` | auto | Path to `sharp.exe` |
 | `--checkpoint PATH` | auto | Path to `sharp_model.pt` |
@@ -72,3 +72,13 @@ pipeline/reconstruct/output/<clip_name>/
 ## Versioning Note
 
 Existing v1 outputs in `Video/output/` are NOT touched. This pipeline writes to `pipeline/reconstruct/output/`.
+
+## Key Finding: Frame Density > Temporal Smoothing
+
+A/B comparison showed that **extracting more frames** (every frame vs every 3rd) produces much smoother playback than any post-hoc temporal smoothing in Phase 3. The default was changed from `--every-nth 3` to `--every-nth 1` based on this finding.
+
+| Setting | Frames (testclip) | Est. time | Quality |
+|---|---|---|---|
+| `--every-nth 1` (default) | 103 | ~2.8 hours | Best — smoothest playback |
+| `--every-nth 2` | 52 | ~1.4 hours | Good middle ground |
+| `--every-nth 3` (old default) | 35 | ~54 min | Noticeable temporal gaps |

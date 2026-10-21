@@ -292,8 +292,12 @@
     }
 
     async function loadManifest() {
-      const res = await fetch("manifest.json");
-      frames = await res.json();
+      const urlParams = new URLSearchParams(window.location.search);
+      const baseDir = urlParams.get('dir') || '';
+      const manifestUrl = baseDir ? `${baseDir.replace(/\/$/, '')}/manifest.json` : 'manifest.json';
+      const res = await fetch(manifestUrl);
+      const rawFrames = await res.json();
+      frames = rawFrames.map(f => baseDir ? `${baseDir.replace(/\/$/, '')}/${f}` : f);
       frameCache = new Array(frames.length).fill(null);
       hudFrame.textContent = `${frames.length} frames. Loading...`;
       if (frames.length) await showFrame(0);
