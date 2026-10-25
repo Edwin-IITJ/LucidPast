@@ -88,6 +88,14 @@ Assets/AssetStoreTools*
 *.pdb
 *.opendb
 
+# === ANDROID (AR viewer — exploration/ar-android) ============
+AR/preprocessing/output/
+.gradle/
+local.properties
+*.apk
+*.aab
+*.keystore
+
 # === SYSTEM FILES =============================================
 Thumbs.db
 ehthumbs.db

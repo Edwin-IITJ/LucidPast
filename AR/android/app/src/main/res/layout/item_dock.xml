@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dock_card"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:background="@drawable/dock_card_bg"
+    android:padding="2dp">
+
+    <ImageView
+        android:id="@+id/dock_thumb"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/app_name" />
+
+    <TextView
+        android:id="@+id/dock_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:background="#CC000000"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:textColor="#FFD24D"
+        android:textSize="9sp"
+        android:text="@string/badge_video"
+        android:visibility="gone" />
+
+</FrameLayout>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">LucidPast AR</string>
+    <string name="badge_video">VID</string>
+    <string name="no_assets">No assets found.\nCopy the LucidPastAR folder to phone storage (e.g. /sdcard/LucidPastAR) with manifest.json inside.</string>
+    <string name="storage_permission">Storage access required: Settings → All files access → allow LucidPast AR.</string>
+    <string name="video_frame_zero">%1$s — video, showing frame 0 (playback lands in M3)</string>
+    <string name="loaded">%1$s — %2$,d splats, loaded in %3$d ms</string>
+</resources>
