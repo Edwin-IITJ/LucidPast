@@ -1,0 +1,498 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>LucidPast — 4D Splat Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
+
+    #hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      color: #eee;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      line-height: 1.5;
+    }
+
+    #hud .label {
+      color: #888;
+      font-size: 11px;
+    }
+
+    #hud .highlight {
+      color: #6cf;
+    }
+
+    #controls-help {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      z-index: 10;
+      color: #999;
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      line-height: 1.6;
+    }
+
+    #controls-help kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-family: inherit;
+    }
+
+    #playback-bar {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #playback-bar button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #eee;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    #playback-bar button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    #playback-bar button.active {
+      background: rgba(100, 200, 255, 0.3);
+      border-color: rgba(100, 200, 255, 0.5);
+    }
+
+    #timeline {
+      width: 200px;
+      accent-color: #6cf;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="hud">
+    <div id="hud-status">Loading .splat4d...</div>
+    <div class="label" id="hud-info"></div>
+    <div class="label" id="hud-speed"></div>
+  </div>
+
+  <div id="controls-help">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;
+    <kbd>Q</kbd><kbd>E</kbd> Down/Up &nbsp;
+    <kbd>Drag</kbd> Look &nbsp;
+    <kbd>Scroll</kbd> Speed<br>
+    <kbd>Space</kbd> Play/Pause &nbsp;
+    <kbd>←</kbd><kbd>→</kbd> Step frame
+  </div>
+
+  <div id="playback-bar">
+    <input type="range" id="timeline" min="0" max="100" value="0" step="0.1" />
+    <button id="btn-prev" title="Previous frame">◀</button>
+    <button id="btn-play" class="active" title="Play/Pause">⏸</button>
+    <button id="btn-next" title="Next frame">▶</button>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from "three";
+
+    // ─── FPS Controls (same as view_sequence.html) ───
+    class FPSControls {
+      constructor(camera, domElement, options = {}) {
+        this.camera = camera;
+        this.domElement = domElement;
+        this.moveSpeed = options.moveSpeed ?? 0.05;
+        this.lookSpeed = options.lookSpeed ?? 0.003;
+        this.minSpeed = options.minSpeed ?? 0.001;
+        this.maxSpeed = options.maxSpeed ?? 5.0;
+        this.speedMultiplier = options.speedMultiplier ?? 1.2;
+        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+        this.isDragging = false;
+        this.previousMousePosition = { x: 0, y: 0 };
+        this.euler = new THREE.Euler(0, 0, 0, "YXZ");
+        this.euler.setFromQuaternion(this.camera.quaternion);
+        this._onMouseDown = () => { this.isDragging = true; };
+        this._onMouseMove = (e) => {
+          if (this.isDragging) {
+            const dx = e.movementX || (e.clientX - this.previousMousePosition.x);
+            const dy = e.movementY || (e.clientY - this.previousMousePosition.y);
+            this.euler.y -= dx * this.lookSpeed;
+            this.euler.x -= dy * this.lookSpeed;
+            this.euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.euler.x));
+            this.camera.quaternion.setFromEuler(this.euler);
+          }
+          this.previousMousePosition = { x: e.clientX, y: e.clientY };
+        };
+        this._onMouseUp = () => { this.isDragging = false; };
+        this._onWheel = (e) => {
+          e.preventDefault();
+          if (e.deltaY < 0) this.moveSpeed = Math.min(this.moveSpeed * this.speedMultiplier, this.maxSpeed);
+          else if (e.deltaY > 0) this.moveSpeed = Math.max(this.moveSpeed / this.speedMultiplier, this.minSpeed);
+        };
+        this._onKeyDown = (e) => { const k = e.key.toLowerCase(); if (k in this.keys) this.keys[k] = true; };
+        this._onKeyUp = (e) => { const k = e.key.toLowerCase(); if (k in this.keys) this.keys[k] = false; };
+        domElement.addEventListener("mousedown", this._onMouseDown);
+        document.addEventListener("mousemove", this._onMouseMove);
+        document.addEventListener("mouseup", this._onMouseUp);
+        domElement.addEventListener("wheel", this._onWheel, { passive: false });
+        domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.addEventListener("keydown", this._onKeyDown);
+        document.addEventListener("keyup", this._onKeyUp);
+      }
+      update() {
+        if (!this.camera) return;
+        const dir = new THREE.Vector3();
+        const right = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        this.camera.getWorldDirection(dir);
+        dir.y = 0; dir.normalize();
+        right.crossVectors(this.camera.up, dir).normalize();
+        if (this.keys.w) this.camera.position.addScaledVector(dir, this.moveSpeed);
+        if (this.keys.s) this.camera.position.addScaledVector(dir, -this.moveSpeed);
+        if (this.keys.a) this.camera.position.addScaledVector(right, this.moveSpeed);
+        if (this.keys.d) this.camera.position.addScaledVector(right, -this.moveSpeed);
+        if (this.keys.e) this.camera.position.addScaledVector(up, this.moveSpeed);
+        if (this.keys.q) this.camera.position.addScaledVector(up, -this.moveSpeed);
+      }
+    }
+
+    // ─── .splat4d loader ───
+
+    const C0 = 0.28209479177387814;
+    const HEADER_SIZE = 64;
+
+    function parseSplat4d(buffer) {
+      const view = new DataView(buffer);
+      const u8 = new Uint8Array(buffer);
+
+      // Magic
+      const magic = String.fromCharCode(u8[0], u8[1], u8[2], u8[3]);
+      if (magic !== "SP4D") throw new Error(`Invalid magic: ${magic}`);
+
+      // Header
+      const version = view.getUint16(4, true);
+      const nGaussians = view.getUint32(6, true);
+      const nFrames = view.getUint32(10, true);
+      const fps = view.getFloat32(14, true);
+      const tStart = view.getFloat32(18, true);
+      const tEnd = view.getFloat32(22, true);
+      const tCenter = view.getFloat32(26, true);
+      const posDeg = u8[30];
+      const colDeg = u8[31];
+      const opaDeg = u8[32];
+      const sclDeg = u8[33];
+      const rotDeg = u8[34];
+      const flags = u8[35];
+      const hasTrbf = !!(flags & 1);
+
+      let offset = HEADER_SIZE;
+
+      // Canonical Gaussians (14 × f32 = 56 bytes each)
+      const canonicalBytes = nGaussians * 56;
+      const canonical = new Float32Array(buffer, offset, nGaussians * 14);
+      offset += canonicalBytes;
+
+      // Helper to read motion coefficients
+      function readMotion(nChannels, degree) {
+        if (degree === 0) return null;
+        const count = nGaussians * nChannels * degree;
+        const data = new Float32Array(buffer.slice(offset, offset + count * 4));
+        offset += count * 4;
+        return { data, nChannels, degree };
+      }
+
+      const posMotion = readMotion(3, posDeg);
+      const colMotion = readMotion(3, colDeg);
+      const opaMotion = readMotion(1, opaDeg);
+      const sclMotion = readMotion(3, sclDeg);
+      const rotMotion = readMotion(4, rotDeg);
+
+      // TRBF
+      let trbf = null;
+      if (hasTrbf) {
+        const trbfData = new Float32Array(buffer.slice(offset, offset + nGaussians * 8));
+        offset += nGaussians * 8;
+        trbf = trbfData; // interleaved [tau0, mu0, tau1, mu1, ...]
+      }
+
+      return {
+        version, nGaussians, nFrames, fps, tStart, tEnd, tCenter,
+        posDeg, colDeg, opaDeg, sclDeg, rotDeg, hasTrbf,
+        canonical, posMotion, colMotion, opaMotion, sclMotion, rotMotion, trbf,
+      };
+    }
+
+    // ─── Polynomial evaluation at time t ───
+
+    function evaluateFrame(data, t, positions, colors) {
+      const n = data.nGaussians;
+      const dt = t - data.tCenter;
+      const dt2 = dt * dt;
+      const dt3 = dt2 * dt;
+      const can = data.canonical; // 14 floats per gaussian
+
+      for (let i = 0; i < n; i++) {
+        const ci = i * 14;
+
+        // Position: canonical + motion polynomial
+        let px = can[ci];     // x
+        let py = can[ci + 1]; // y
+        let pz = can[ci + 2]; // z
+
+        if (data.posMotion) {
+          const pm = data.posMotion;
+          const deg = pm.degree;
+          const mi = i * 3 * deg;
+          // degree 1: + vel * dt
+          px += pm.data[mi] * dt;
+          py += pm.data[mi + 1] * dt;
+          pz += pm.data[mi + 2] * dt;
+          if (deg >= 2) {
+            // degree 2: + accel * dt²
+            px += pm.data[mi + 3] * dt2;
+            py += pm.data[mi + 4] * dt2;
+            pz += pm.data[mi + 5] * dt2;
+          }
+          if (deg >= 3) {
+            // degree 3: + jerk * dt³
+            px += pm.data[mi + 6] * dt3;
+            py += pm.data[mi + 7] * dt3;
+            pz += pm.data[mi + 8] * dt3;
+          }
+        }
+
+        positions[i * 3] = px;
+        positions[i * 3 + 1] = py;
+        positions[i * 3 + 2] = pz;
+
+        // Color: SH DC → linear RGB (same as view_sequence.html)
+        let dc0 = can[ci + 3];
+        let dc1 = can[ci + 4];
+        let dc2 = can[ci + 5];
+
+        if (data.colMotion) {
+          const cm = data.colMotion;
+          const deg = cm.degree;
+          const mi = i * 3 * deg;
+          dc0 += cm.data[mi] * dt;
+          dc1 += cm.data[mi + 1] * dt;
+          dc2 += cm.data[mi + 2] * dt;
+          if (deg >= 2) {
+            dc0 += cm.data[mi + 3] * dt2;
+            dc1 += cm.data[mi + 4] * dt2;
+            dc2 += cm.data[mi + 5] * dt2;
+          }
+        }
+
+        colors[i * 3] = Math.max(0, Math.min(1, 0.5 + C0 * dc0));
+        colors[i * 3 + 1] = Math.max(0, Math.min(1, 0.5 + C0 * dc1));
+        colors[i * 3 + 2] = Math.max(0, Math.min(1, 0.5 + C0 * dc2));
+      }
+    }
+
+    // ─── Three.js setup ───
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 500);
+    camera.position.set(0, 0, 3);
+
+    const controls = new FPSControls(camera, renderer.domElement);
+
+    // ─── DOM refs ───
+    const hudStatus = document.getElementById("hud-status");
+    const hudInfo = document.getElementById("hud-info");
+    const hudSpeed = document.getElementById("hud-speed");
+    const btnPlay = document.getElementById("btn-play");
+    const btnPrev = document.getElementById("btn-prev");
+    const btnNext = document.getElementById("btn-next");
+    const timeline = document.getElementById("timeline");
+
+    // ─── State ───
+    let splat4d = null;
+    let currentTime = 0;
+    let playing = true;
+    let lastAnimTime = 0;
+    let pointCloud = null;
+    let positionsAttr = null;
+    let colorsAttr = null;
+
+    // Pre-allocated buffers
+    let positionsBuf = null;
+    let colorsBuf = null;
+
+    // ─── Load .splat4d ───
+
+    async function loadSplat4d() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const file = urlParams.get('file') || 'clip.splat4d';
+      hudStatus.textContent = `Loading ${file}...`;
+
+      const res = await fetch(file);
+      if (!res.ok) throw new Error(`Failed to load ${file}: ${res.status}`);
+      const buffer = await res.arrayBuffer();
+      splat4d = parseSplat4d(buffer);
+
+      const n = splat4d.nGaussians;
+      currentTime = splat4d.tStart;
+
+      // Setup timeline
+      timeline.min = splat4d.tStart;
+      timeline.max = splat4d.tEnd;
+      timeline.step = 1 / splat4d.fps;
+      timeline.value = currentTime;
+
+      // Allocate buffers
+      positionsBuf = new Float32Array(n * 3);
+      colorsBuf = new Float32Array(n * 3);
+
+      // Initial evaluation
+      evaluateFrame(splat4d, currentTime, positionsBuf, colorsBuf);
+
+      // Create point cloud
+      const geo = new THREE.BufferGeometry();
+      positionsAttr = new THREE.BufferAttribute(positionsBuf, 3);
+      positionsAttr.setUsage(THREE.DynamicDrawUsage);
+      colorsAttr = new THREE.BufferAttribute(colorsBuf, 3);
+      colorsAttr.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute("position", positionsAttr);
+      geo.setAttribute("color", colorsAttr);
+
+      const mat = new THREE.PointsMaterial({
+        size: 0.005, vertexColors: true, sizeAttenuation: true,
+        transparent: true, opacity: 0.85,
+      });
+      pointCloud = new THREE.Points(geo, mat);
+      pointCloud.rotation.x = Math.PI; // SHARP Y-down → Three.js Y-up
+
+      scene.add(pointCloud);
+
+      hudStatus.textContent = `${file} — ${n.toLocaleString()} gaussians`;
+      hudInfo.textContent = `${splat4d.nFrames} frames | ${splat4d.fps} fps | `
+        + `pos°${splat4d.posDeg} col°${splat4d.colDeg} opa°${splat4d.opaDeg} `
+        + `scl°${splat4d.sclDeg} rot°${splat4d.rotDeg}`
+        + (splat4d.hasTrbf ? ' | TRBF' : '');
+    }
+
+    loadSplat4d().catch(e => {
+      hudStatus.textContent = `Error: ${e.message}`;
+      console.error(e);
+    });
+
+    // ─── Playback ───
+
+    const FRAME_DT = 1 / 8; // seconds per frame step
+
+    function setTime(t) {
+      if (!splat4d) return;
+      currentTime = Math.max(splat4d.tStart, Math.min(splat4d.tEnd, t));
+      timeline.value = currentTime;
+
+      evaluateFrame(splat4d, currentTime, positionsBuf, colorsBuf);
+      positionsAttr.needsUpdate = true;
+      colorsAttr.needsUpdate = true;
+
+      const pct = ((currentTime - splat4d.tStart) / (splat4d.tEnd - splat4d.tStart) * 100).toFixed(0);
+      hudStatus.textContent = `t=${currentTime.toFixed(2)}s (${pct}%) — ${splat4d.nGaussians.toLocaleString()} gaussians`;
+    }
+
+    function stepForward() {
+      setTime(currentTime + FRAME_DT);
+      // Loop
+      if (currentTime >= splat4d.tEnd) setTime(splat4d.tStart);
+    }
+
+    function stepBackward() {
+      setTime(currentTime - FRAME_DT);
+      if (currentTime <= splat4d.tStart) setTime(splat4d.tEnd);
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      btnPlay.textContent = playing ? "⏸" : "▶";
+      btnPlay.classList.toggle("active", playing);
+    }
+
+    btnPlay.addEventListener("click", togglePlay);
+    btnPrev.addEventListener("click", () => { if (!playing) stepBackward(); });
+    btnNext.addEventListener("click", () => { if (!playing) stepForward(); });
+    timeline.addEventListener("input", () => { setTime(parseFloat(timeline.value)); });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+      if (e.code === "ArrowRight" && !playing) stepForward();
+      if (e.code === "ArrowLeft" && !playing) stepBackward();
+    });
+
+    // ─── Render loop ───
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      controls.update();
+      hudSpeed.textContent = `Speed: ${controls.moveSpeed.toFixed(3)}`;
+
+      if (playing && splat4d) {
+        if (time - lastAnimTime >= 1000 / splat4d.fps) {
+          lastAnimTime = time;
+          stepForward();
+        }
+      }
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+
+    window.addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+
+</html>
+

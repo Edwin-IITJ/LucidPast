@@ -126,13 +126,22 @@ Current default: **geometry frozen, no color EMA, shadow suppression ON**.
 
 ---
 
-### Phase 4 — Compress `pipeline/compress/`
+### Phase 4 — Compress `pipeline/compress/` ✦ CORE COMPLETE
 
-> **Status:** Not started.
+> **Status:** Core pipeline built and validated. Static camera: near-lossless at 15×. Moving camera: functional at 5.5× but needs piecewise segmentation for quality parity. See `pipeline/compress/README.md` for full details.
 
-- Keyframe + delta encoding across the splat sequence
-- Study `.splat4d`'s format before designing anything custom
-- Target HTTP-range-streamable output, not full-sequence download
+Implements polynomial trajectory compression inspired by three 4D Gaussian Splatting papers (Luiten et al. 3DV'24, Wu et al. CVPR'24, Li et al. CVPR'24 — see `AR/papers/`).
+
+| Clip | Type | Compression vs .splat | Position Error | Quality |
+|---|---|---|---|---|
+| testclip | Static B&W | **8.75×** (1260→144 MB) | 0.6% of scene | ✅ Near-lossless |
+| testclip2 | Dashcam | **5.5×** (792→144 MB) | 2.3% of scene | ⚠️ Piecewise pending |
+
+**Pipeline scripts:** `validate_correspondence.py` → `fit_motion.py` → `fit_trbf.py` → `splat4d.py`
+**Single command:** `python compress.py ../reconstruct/output/<clip>`
+**Viewer:** `view_4d.html` (Three.js, evaluates polynomials at playback time)
+
+**Pending:** Piecewise segmentation (`--segment-frames`) for moving camera quality.
 
 ---
 
@@ -173,6 +182,14 @@ Current default: **geometry frozen, no color EMA, shadow suppression ON**.
 | [splaTV](https://github.com/nicmhd/splaTV) | 4D Gaussian Splat viewer | Reference for temporal playback of splat sequences |
 | [.splat4d](https://github.com/nicmhd/splat4d) | Compressed 4D splat format | Reference for Phase 4 compression format |
 | `../LucidPast/` | The image pipeline this extends | SHARP setup, WebXR code, config patterns to reuse |
+
+### Phase 4 Research Papers (in `AR/papers/`)
+
+| Paper | Venue | Key Contribution to Phase 4 |
+|---|---|---|
+| Dynamic 3D Gaussians (Luiten et al.) | 3DV 2024 | Gaussian correspondence theory; confirmed SHARP's grid gives free tracking |
+| 4D Gaussian Splatting (Wu et al.) | CVPR 2024 | Compact deformation fields; informed compression ratio targets |
+| **Spacetime Gaussian Feature Splatting (Li et al.)** | **CVPR 2024** | **Primary reference: polynomial motion model + TRBF temporal opacity** |
 
 ---
 

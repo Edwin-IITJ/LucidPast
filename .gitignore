@@ -90,6 +90,7 @@ Assets/AssetStoreTools*
 
 # === ANDROID (AR viewer — exploration/ar-android) ============
 AR/preprocessing/output/
+AR/papers/
 .gradle/
 local.properties
 *.apk
